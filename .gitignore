@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Excel mellombels låsefil
+~$*.xlsx
+
+# Bygg-output på rotnivå
+/build/
+
+# Flutter-bygg (handterast òg av vm_tracker/.gitignore)
+vm_tracker/build/
+vm_tracker/.dart_tool/
+vm_tracker/.flutter-plugins
+vm_tracker/.flutter-plugins-dependencies
