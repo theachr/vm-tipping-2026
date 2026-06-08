@@ -154,6 +154,7 @@ class _HomePageState extends State<HomePage> {
   List<MatchInfo> _matches = [];
   bool _loading = true;
   String? _error;
+  int _navIndex = 0;
 
   @override
   void initState() {
@@ -227,20 +228,6 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('VM Tipping 2026'),
         actions: [
-          IconButton(
-            tooltip: 'Kommande kampar',
-            icon: const Icon(Icons.event_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => UpcomingMatchesPage(
-                  matches: _matches,
-                  participants: _participants,
-                  overrides: _ovr!,
-                ),
-              ),
-            ),
-          ),
           PopupMenuButton<int>(
             tooltip: 'Bytt tema',
             icon: const Icon(Icons.palette_outlined),
@@ -275,36 +262,69 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: ListView(
+      body: Row(
         children: [
-          Container(
-            width: double.infinity,
-            color: Theme.of(context).colorScheme.primaryContainer,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              children: [
-                Icon(Icons.emoji_events,
-                    size: 36,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer),
-                const SizedBox(height: 4),
-                Text('Resultattavle',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer)),
-                Text('$_playedGroupMatches av 72 gruppekampar spelt',
-                    style: TextStyle(
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer)),
-              ],
-            ),
+          NavigationRail(
+            extended: true,
+            minExtendedWidth: 168,
+            selectedIndex: _navIndex,
+            onDestinationSelected: (i) => setState(() => _navIndex = i),
+            destinations: const [
+              NavigationRailDestination(
+                icon: Icon(Icons.leaderboard_outlined),
+                selectedIcon: Icon(Icons.leaderboard),
+                label: Text('Tavle'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.event_outlined),
+                selectedIcon: Icon(Icons.event),
+                label: Text('Kampar'),
+              ),
+            ],
           ),
-          for (var i = 0; i < standings.length; i++)
-            _standingTile(standings[i], i + 1),
-          const SizedBox(height: 24),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: _navIndex == 0
+                ? _scoreboard(standings)
+                : UpcomingMatchesView(
+                    matches: _matches,
+                    participants: _participants,
+                    overrides: _ovr!,
+                  ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _scoreboard(List<Standing> standings) {
+    return ListView(
+      children: [
+        Container(
+          width: double.infinity,
+          color: Theme.of(context).colorScheme.primaryContainer,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              Icon(Icons.emoji_events,
+                  size: 36,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer),
+              const SizedBox(height: 4),
+              Text('Resultattavle',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
+              Text('$_playedGroupMatches av 72 gruppekampar spelt',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
+            ],
+          ),
+        ),
+        for (var i = 0; i < standings.length; i++)
+          _standingTile(standings[i], i + 1),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -376,11 +396,11 @@ String _prettyDate(String iso) {
 /// Sorteringsnøkkel: dato + tid (begge tekstsorterbare i openfootball).
 String _sortKey(MatchInfo m) => '${m.date} ${m.time}';
 
-class UpcomingMatchesPage extends StatefulWidget {
+class UpcomingMatchesView extends StatefulWidget {
   final List<MatchInfo> matches;
   final List<Participant> participants;
   final Overrides overrides;
-  const UpcomingMatchesPage({
+  const UpcomingMatchesView({
     super.key,
     required this.matches,
     required this.participants,
@@ -388,10 +408,10 @@ class UpcomingMatchesPage extends StatefulWidget {
   });
 
   @override
-  State<UpcomingMatchesPage> createState() => _UpcomingMatchesPageState();
+  State<UpcomingMatchesView> createState() => _UpcomingMatchesViewState();
 }
 
-class _UpcomingMatchesPageState extends State<UpcomingMatchesPage> {
+class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
   bool _onlyUpcoming = true;
 
   @override
@@ -403,34 +423,29 @@ class _UpcomingMatchesPageState extends State<UpcomingMatchesPage> {
         ? all.where((m) => actualResult(m, ovr) == null).toList()
         : all;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kommande kampar'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: true, label: Text('Kommande')),
-                ButtonSegment(value: false, label: Text('Alle')),
-              ],
-              selected: {_onlyUpcoming},
-              onSelectionChanged: (s) =>
-                  setState(() => _onlyUpcoming = s.first),
-            ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('Kommande')),
+              ButtonSegment(value: false, label: Text('Alle')),
+            ],
+            selected: {_onlyUpcoming},
+            onSelectionChanged: (s) =>
+                setState(() => _onlyUpcoming = s.first),
           ),
-          Expanded(
-            child: shown.isEmpty
-                ? const Center(child: Text('Ingen kampar å vise.'))
-                : ListView.builder(
-                    itemCount: shown.length,
-                    itemBuilder: (_, i) => _matchTile(shown[i]),
-                  ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: shown.isEmpty
+              ? const Center(child: Text('Ingen kampar å vise.'))
+              : ListView.builder(
+                  itemCount: shown.length,
+                  itemBuilder: (_, i) => _matchTile(shown[i]),
+                ),
+        ),
+      ],
     );
   }
 
