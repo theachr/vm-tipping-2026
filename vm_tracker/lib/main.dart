@@ -262,38 +262,65 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Row(
-        children: [
-          NavigationRail(
-            extended: true,
-            minExtendedWidth: 168,
-            selectedIndex: _navIndex,
-            onDestinationSelected: (i) => setState(() => _navIndex = i),
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.leaderboard_outlined),
-                selectedIcon: Icon(Icons.leaderboard),
-                label: Text('Tavle'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.event_outlined),
-                selectedIcon: Icon(Icons.event),
-                label: Text('Kampar'),
-              ),
-            ],
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: _navIndex == 0
-                ? _scoreboard(standings)
-                : UpcomingMatchesView(
-                    matches: _matches,
-                    participants: _participants,
-                    overrides: _ovr!,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = _navIndex == 0
+              ? _scoreboard(standings)
+              : UpcomingMatchesView(
+                  matches: _matches,
+                  participants: _participants,
+                  overrides: _ovr!,
+                );
+
+          // Smal skjerm (mobil): innhald i full breidde, meny kjem
+          // som botnmeny under (sjå bottomNavigationBar).
+          if (constraints.maxWidth < 600) return content;
+
+          // Brei skjerm (mac/web): fast sidemeny til venstre.
+          return Row(
+            children: [
+              NavigationRail(
+                extended: constraints.maxWidth >= 760,
+                minExtendedWidth: 168,
+                selectedIndex: _navIndex,
+                onDestinationSelected: (i) => setState(() => _navIndex = i),
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.leaderboard_outlined),
+                    selectedIcon: Icon(Icons.leaderboard),
+                    label: Text('Tavle'),
                   ),
-          ),
-        ],
+                  NavigationRailDestination(
+                    icon: Icon(Icons.event_outlined),
+                    selectedIcon: Icon(Icons.event),
+                    label: Text('Kampar'),
+                  ),
+                ],
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(child: content),
+            ],
+          );
+        },
       ),
+      bottomNavigationBar: MediaQuery.of(context).size.width < 600
+          ? NavigationBar(
+              selectedIndex: _navIndex,
+              onDestinationSelected: (i) => setState(() => _navIndex = i),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.leaderboard_outlined),
+                  selectedIcon: Icon(Icons.leaderboard),
+                  label: 'Tavle',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.event_outlined),
+                  selectedIcon: Icon(Icons.event),
+                  label: 'Kampar',
+                ),
+              ],
+            )
+          : null,
     );
   }
 
