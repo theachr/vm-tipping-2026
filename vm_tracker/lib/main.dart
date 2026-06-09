@@ -13,15 +13,31 @@ class AppTheme {
   final String name;
   final Color seed;
   final Brightness brightness;
-  const AppTheme(this.name, this.seed, this.brightness);
+
+  /// Viser regnboge-gradient på toppbanneret (Pride-tema).
+  final bool rainbow;
+  const AppTheme(this.name, this.seed, this.brightness,
+      {this.rainbow = false});
 }
+
+/// Klassisk Pride-regnboge (6 striper).
+const kPrideColors = <Color>[
+  Color(0xFFE40303), // raud
+  Color(0xFFFF8C00), // oransje
+  Color(0xFFFFED00), // gul
+  Color(0xFF008026), // grøn
+  Color(0xFF004DFF), // blå
+  Color(0xFF750787), // lilla
+];
 
 const kThemes = <AppTheme>[
   AppTheme('Rosa natt', Color(0xFFE91E8C), Brightness.dark),
   AppTheme('Stadiongrøn', Color(0xFF2E7D32), Brightness.dark),
   AppTheme('Kveldsnavy', Color(0xFF5C7CFA), Brightness.dark),
   AppTheme('Gull & svart', Color(0xFFFFB300), Brightness.dark),
+  AppTheme('Pride natt', Color(0xFF9C27B0), Brightness.dark, rainbow: true),
   AppTheme('Rosa (lys)', Color(0xFFE91E8C), Brightness.light),
+  AppTheme('Pride (lys)', Color(0xFF9C27B0), Brightness.light, rainbow: true),
 ];
 
 /// Vald tema-indeks, lytta på av heile appen og lagra lokalt.
@@ -243,7 +259,10 @@ class _HomePageState extends State<HomePage> {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: kThemes[i].seed,
+                          color: kThemes[i].rainbow ? null : kThemes[i].seed,
+                          gradient: kThemes[i].rainbow
+                              ? const LinearGradient(colors: kPrideColors)
+                              : null,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.black26),
                         ),
@@ -325,26 +344,44 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _scoreboard(List<Standing> standings) {
+    final scheme = Theme.of(context).colorScheme;
+    final pride = kThemes[themeIndex.value].rainbow;
+
+    // Pride: kvit tekst med skugge så han les på alle regnbogefargane.
+    // Elles: vanleg primærfarge.
+    final headerFg = pride ? Colors.white : scheme.onPrimaryContainer;
+    final shadows = pride
+        ? const [Shadow(blurRadius: 4, color: Colors.black54)]
+        : const <Shadow>[];
+
     return ListView(
       children: [
         Container(
           width: double.infinity,
-          color: Theme.of(context).colorScheme.primaryContainer,
           padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: pride ? null : scheme.primaryContainer,
+            gradient: pride
+                ? const LinearGradient(
+                    colors: kPrideColors,
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+          ),
           child: Column(
             children: [
               Icon(Icons.emoji_events,
-                  size: 36,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer),
+                  size: 36, color: headerFg, shadows: shadows),
               const SizedBox(height: 4),
               Text('Resultattavle',
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                      color: headerFg,
+                      shadows: shadows)),
               Text('$_playedGroupMatches av 72 gruppekampar spelt',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                  style: TextStyle(color: headerFg, shadows: shadows)),
             ],
           ),
         ),
