@@ -257,6 +257,36 @@ class GroupTableCard extends StatelessWidget {
   }
 }
 
+/// Toppnivå-fane: sluttspeloppsettet (felles) ut frå faktiske resultat.
+class KnockoutView extends StatelessWidget {
+  final List<MatchInfo> matches;
+  final Overrides overrides;
+  const KnockoutView(
+      {super.key, required this.matches, required this.overrides});
+
+  @override
+  Widget build(BuildContext context) {
+    final ko = buildBracket(
+      scoreFor: _resultScore(overrides),
+      matches: matches,
+      winnerSide: (m) => winnerSideOf(m, overrides),
+      requireComplete: true,
+    );
+    final medals = actualMedals(matches, overrides);
+    final highlight = <String>{
+      for (final v in medals.values) ?v,
+    };
+    return BracketView(
+      matches: ko,
+      highlight: highlight,
+      caption: 'Sluttspeloppsettet ut frå faktiske resultat (felles for alle). '
+          'Plassane (1A, 2B, 3.-arar, vinnar/tapar av kamp) fyller seg med '
+          'ekte lag etter kvart som gruppene og sluttspelkampane blir spelte. '
+          'Venstre og høgre halvdel møtest i finalen i midten.',
+    );
+  }
+}
+
 /// Toppnivå-fane: alle gruppetabellane ut frå faktiske resultat (felles).
 class GroupStageView extends StatelessWidget {
   final List<MatchInfo> matches;
@@ -683,11 +713,13 @@ class _HomePageState extends State<HomePage> {
               ? _scoreboard(standings)
               : _navIndex == 1
                   ? GroupStageView(matches: _matches, overrides: _ovr!)
-                  : UpcomingMatchesView(
-                      matches: _matches,
-                      participants: _visible,
-                      overrides: _ovr!,
-                    );
+                  : _navIndex == 2
+                      ? UpcomingMatchesView(
+                          matches: _matches,
+                          participants: _visible,
+                          overrides: _ovr!,
+                        )
+                      : KnockoutView(matches: _matches, overrides: _ovr!);
 
           // Smal skjerm (mobil): innhald i full breidde, meny kjem
           // som botnmeny under (sjå bottomNavigationBar).
@@ -717,6 +749,11 @@ class _HomePageState extends State<HomePage> {
                     selectedIcon: Icon(Icons.event),
                     label: Text('Kampar'),
                   ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.account_tree_outlined),
+                    selectedIcon: Icon(Icons.account_tree),
+                    label: Text('Sluttspill'),
+                  ),
                 ],
               ),
               const VerticalDivider(width: 1),
@@ -744,6 +781,11 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.event_outlined),
                   selectedIcon: Icon(Icons.event),
                   label: 'Kampar',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.account_tree_outlined),
+                  selectedIcon: Icon(Icons.account_tree),
+                  label: 'Sluttspill',
                 ),
               ],
             )
@@ -1290,6 +1332,12 @@ class _ParticipantPageState extends State<ParticipantPage> {
           child: BracketView(
             matches: ko,
             highlight: _p.medals.values.toSet(),
+            caption: _bracketResults
+                ? 'Sluttspeltreet ut frå faktiske resultat. Medaljetipsa dine '
+                    'er utheva. Venstre og høgre halvdel møtest i finalen i '
+                    'midten; ekte lag fyller inn etter kvart.'
+                : '${_p.name} si projeksjon ut frå tippingane. Medaljetipsa '
+                    'er utheva. Venstre og høgre halvdel møtest i finalen i midten.',
           ),
         ),
       ],
@@ -1710,7 +1758,9 @@ List<List<double>> _mkCenters(int leaf) {
 class BracketView extends StatelessWidget {
   final List<KoMatch> matches;
   final Set<String> highlight;
-  const BracketView({super.key, required this.matches, required this.highlight});
+  final String? caption;
+  const BracketView(
+      {super.key, required this.matches, required this.highlight, this.caption});
 
   @override
   Widget build(BuildContext context) {
@@ -1777,12 +1827,12 @@ class BracketView extends StatelessWidget {
           width: double.infinity,
           color: scheme.surfaceContainerHighest,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: const Text(
-            'Venstre og høgre halvdel møtest i finalen i midten. Laga er dine '
-            'tippa gruppeplasseringar — Spania, Frankrike og Argentina er '
-            'utheva. Dra/scroll for å sjå heile treet; ekte lag fyller inn '
-            'etter kvart som kampane blir spelt.',
-            style: TextStyle(fontSize: 12),
+          child: Text(
+            caption ??
+                'Venstre og høgre halvdel møtest i finalen i midten. '
+                    'Dra/scroll for å sjå heile treet; ekte lag fyller inn '
+                    'etter kvart som kampane blir spelt.',
+            style: const TextStyle(fontSize: 12),
           ),
         ),
         Expanded(
