@@ -726,6 +726,10 @@ class _ParticipantPageState extends State<ParticipantPage> {
   Overrides get _ovr => widget.overrides;
   List<MatchInfo> get _matches => widget.matches;
 
+  // Sluttspeltre-modus: true = faktiske resultat, false = denne deltakaren si
+  // projeksjon (tipping). Treet skal i utgangspunktet vise resultata.
+  bool _bracketResults = true;
+
   Standing get _standing => standingFor(_p, _matches, _ovr);
 
   @override
@@ -757,13 +761,59 @@ class _ParticipantPageState extends State<ParticipantPage> {
 
   Widget _bracketTab() {
     final ko = buildBracket(
-      participant: _p,
+      scoreFor: _bracketResults
+          ? (m) {
+              final a = actualResult(m, _ovr);
+              return a == null ? null : {m.team1: a[0], m.team2: a[1]};
+            }
+          : (m) => _p.forMatch(m.team1, m.team2),
       matches: _matches,
       winnerSide: (m) => winnerSideOf(m, _ovr),
+      requireComplete: _bracketResults,
     );
-    return BracketView(
-      matches: ko,
-      highlight: _p.medals.values.toSet(),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(
+                    value: true,
+                    label: Text('Resultat'),
+                    icon: Icon(Icons.sports_soccer),
+                  ),
+                  ButtonSegment(
+                    value: false,
+                    label: Text('Projeksjon'),
+                    icon: Icon(Icons.insights),
+                  ),
+                ],
+                selected: {_bracketResults},
+                onSelectionChanged: (s) =>
+                    setState(() => _bracketResults = s.first),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _bracketResults
+                      ? 'Faktiske resultat. Plassane fyller seg etter kvart '
+                          'som gruppene og kampane vert ferdigspelte.'
+                      : '${_p.name} si projeksjon ut frå tippingane.',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: BracketView(
+            matches: ko,
+            highlight: _p.medals.values.toSet(),
+          ),
+        ),
+      ],
     );
   }
 

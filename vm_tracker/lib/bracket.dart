@@ -34,16 +34,25 @@ class _GroupRow {
   int get gd => gf - ga;
 }
 
-/// Rik gruppetabell ut frå ein deltakar sine tippa resultat.
+/// Ein resultatkjelde for ein gruppekamp: returnerer {team1: mål, team2: mål}
+/// eller null om kampen ikkje har eit (tippa eller spelt) resultat enno.
+typedef ScoreFor = Map<String, int>? Function(MatchInfo m);
+
+/// Rik gruppetabell ut frå ei resultatkjelde (tippingar eller faktiske resultat).
 /// "Group X" -> rangerte rader (1.,2.,3.,4.).
 Map<String, List<_GroupRow>> _richStandings(
-    Participant p, List<MatchInfo> matches) {
+    ScoreFor scoreFor, List<MatchInfo> matches,
+    {bool requireComplete = false}) {
   final groups = <String, List<MatchInfo>>{};
   for (final m in matches.where((m) => m.isGroup)) {
     groups.putIfAbsent(m.group, () => []).add(m);
   }
   final out = <String, List<_GroupRow>>{};
   groups.forEach((g, ms) {
+    // I "Resultat"-modus tek vi berre med grupper som er heilt ferdigspelte,
+    // slik at uavgjorde plassar viser plassholdaren (t.d. "1A") i staden for ei
+    // tilfeldig (alfabetisk) gjetting på ein 0-0-0-tabell.
+    if (requireComplete && ms.any((m) => scoreFor(m) == null)) return;
     final pts = <String, int>{};
     final gf = <String, int>{};
     final ga = <String, int>{};
@@ -58,7 +67,7 @@ Map<String, List<_GroupRow>> _richStandings(
     for (final m in ms) {
       ensure(m.team1);
       ensure(m.team2);
-      final pred = p.forMatch(m.team1, m.team2);
+      final pred = scoreFor(m);
       if (pred == null) continue;
       final x = pred[m.team1]!, y = pred[m.team2]!;
       gf[m.team1] = gf[m.team1]! + x;
@@ -101,7 +110,7 @@ int _cmpStanding(_GroupRow a, _GroupRow b) {
 /// Returnerer kart: "Group X" -> rangerte lagnamn (1.,2.,3.,4.).
 Map<String, List<String>> predictedStandings(
     Participant p, List<MatchInfo> matches) {
-  return _richStandings(p, matches)
+  return _richStandings((m) => p.forMatch(m.team1, m.team2), matches)
       .map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
 }
 
@@ -150,12 +159,20 @@ List<int?> _matchSlots(List<List<int>> slotAllowed, int numGroups) {
 
 /// Bygg heile sluttspeltreet, runde for runde (R32 først).
 /// [winnerSide] gir faktisk vinnar-side (1/2) for ein spelt kamp, elles null.
+/// Bygg sluttspeltreet.
+/// - [scoreFor]: kjelda til gruppeplasseringane. I "Projeksjon"-modus er dette
+///   deltakaren sine tippingar; i "Resultat"-modus er det faktiske resultat.
+/// - [winnerSide]: faktisk vinnar-side (1/2) for ein spelt sluttspelkamp.
+/// I "Resultat"-modus bør [scoreFor] berre gje resultat for ferdigspelte kampar,
+/// slik at treet fyller seg etter kvart som det vert spelt.
 List<KoMatch> buildBracket({
-  required Participant participant,
+  required ScoreFor scoreFor,
   required List<MatchInfo> matches,
   required int? Function(MatchInfo) winnerSide,
+  bool requireComplete = false,
 }) {
-  final rich = _richStandings(participant, matches);
+  final rich =
+      _richStandings(scoreFor, matches, requireComplete: requireComplete);
   final standings =
       rich.map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
   final groupTeams = <String>{
@@ -213,6 +230,10 @@ List<KoMatch> buildBracket({
   }
   // --------------------------------------------------------------------------
 
+  // I "Resultat"-modus resolvar gruppeplassane berre når gruppa er ferdigspelt,
+  // så då er dei ekte (ikkje projiserte). I "Projeksjon"-modus er dei tippa.
+  final markProjected = !requireComplete;
+
   KoTeam resolveSlot(String code) {
     // Allereie eit ekte lag (gruppespel ferdig / kamp trekt).
     if (groupTeams.contains(code)) return KoTeam(code, code);
@@ -223,13 +244,13 @@ List<KoMatch> buildBracket({
       final tbl = standings['Group ${m[2]}'];
       if (tbl != null && tbl.length >= 2) {
         final t = pos == '1' ? tbl[0] : tbl[1];
-        return KoTeam(t, t, projected: true);
+        return KoTeam(t, t, projected: markProjected);
       }
       return KoTeam(null, code);
     }
     if (_thirdGroups(code) != null) {
       final t = thirdSlotToTeam[code];
-      if (t != null) return KoTeam(t, t, projected: true);
+      if (t != null) return KoTeam(t, t, projected: markProjected);
       return KoTeam(null, '3.plass');
     }
     final wl = _wlRe.firstMatch(code);
