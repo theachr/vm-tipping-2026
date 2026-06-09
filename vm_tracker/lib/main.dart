@@ -172,6 +172,10 @@ class _HomePageState extends State<HomePage> {
   String? _error;
   int _navIndex = 0;
 
+  /// Namn på deltakarar som er skjult i visninga (lagra lokalt).
+  Set<String> _hidden = {};
+  static const _hiddenPrefKey = 'hidden_participants';
+
   @override
   void initState() {
     super.initState();
@@ -187,10 +191,13 @@ class _HomePageState extends State<HomePage> {
       final participants = await Participant.loadAll();
       final ovr = await Overrides.load();
       final matches = await fetchMatches();
+      final prefs = await SharedPreferences.getInstance();
+      final hidden = prefs.getStringList(_hiddenPrefKey)?.toSet() ?? <String>{};
       setState(() {
         _participants = participants;
         _ovr = ovr;
         _matches = matches;
+        _hidden = hidden;
         _loading = false;
       });
     } catch (e) {
@@ -199,6 +206,78 @@ class _HomePageState extends State<HomePage> {
         _loading = false;
       });
     }
+  }
+
+  /// Deltakarane som faktisk skal visast (filteret teke med).
+  List<Participant> get _visible =>
+      _participants.where((p) => !_hidden.contains(p.name)).toList();
+
+  Future<void> _setHidden(Set<String> hidden) async {
+    setState(() => _hidden = hidden);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_hiddenPrefKey, hidden.toList());
+  }
+
+  /// Dialog med avkryssing for kvar deltakar.
+  void _openFilter() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        // Lokal kopi som vi redigerer i dialogen.
+        final hidden = {..._hidden};
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return AlertDialog(
+              title: const Text('Vis deltakarar'),
+              content: SizedBox(
+                width: 320,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final p in _participants)
+                      CheckboxListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(p.name),
+                        value: !hidden.contains(p.name),
+                        onChanged: (v) => setLocal(() {
+                          if (v == true) {
+                            hidden.remove(p.name);
+                          } else {
+                            hidden.add(p.name);
+                          }
+                        }),
+                      ),
+                    const Divider(),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => setLocal(hidden.clear),
+                          child: const Text('Vis alle'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Avbryt'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    _setHidden(hidden);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Bruk'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   int get _playedGroupMatches =>
@@ -235,7 +314,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    final standings = _participants
+    final standings = _visible
         .map((p) => standingFor(p, _matches, _ovr!))
         .toList()
       ..sort((a, b) => b.total.compareTo(a.total));
@@ -244,6 +323,13 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('VM Tipping 2026'),
         actions: [
+          IconButton(
+            tooltip: 'Filtrer deltakarar',
+            onPressed: _openFilter,
+            icon: Icon(_hidden.isEmpty
+                ? Icons.filter_list
+                : Icons.filter_list_alt),
+          ),
           PopupMenuButton<int>(
             tooltip: 'Bytt tema',
             icon: const Icon(Icons.palette_outlined),
@@ -287,7 +373,7 @@ class _HomePageState extends State<HomePage> {
               ? _scoreboard(standings)
               : UpcomingMatchesView(
                   matches: _matches,
-                  participants: _participants,
+                  participants: _visible,
                   overrides: _ovr!,
                 );
 
