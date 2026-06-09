@@ -883,39 +883,91 @@ class UpcomingMatchesView extends StatefulWidget {
   State<UpcomingMatchesView> createState() => _UpcomingMatchesViewState();
 }
 
+enum _MatchFilter { upcoming, nextPerGroup, all }
+
 class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
-  bool _onlyUpcoming = true;
+  _MatchFilter _filter = _MatchFilter.upcoming;
 
   @override
   Widget build(BuildContext context) {
     final ovr = widget.overrides;
     final all = [...widget.matches]
       ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
-    final shown = _onlyUpcoming
-        ? all.where((m) => actualResult(m, ovr) == null).toList()
-        : all;
+
+    Widget body;
+    if (_filter == _MatchFilter.nextPerGroup) {
+      body = _nextPerGroupList(all, ovr);
+    } else {
+      final shown = _filter == _MatchFilter.upcoming
+          ? all.where((m) => actualResult(m, ovr) == null).toList()
+          : all;
+      body = shown.isEmpty
+          ? const Center(child: Text('Ingen kampar å vise.'))
+          : ListView(children: _groupedByDay(shown));
+    }
 
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(12),
-          child: SegmentedButton<bool>(
+          child: SegmentedButton<_MatchFilter>(
+            showSelectedIcon: false,
             segments: const [
-              ButtonSegment(value: true, label: Text('Kommande')),
-              ButtonSegment(value: false, label: Text('Alle')),
+              ButtonSegment(
+                  value: _MatchFilter.upcoming, label: Text('Kommande')),
+              ButtonSegment(
+                  value: _MatchFilter.nextPerGroup,
+                  label: Text('Neste pr. gruppe')),
+              ButtonSegment(value: _MatchFilter.all, label: Text('Alle')),
             ],
-            selected: {_onlyUpcoming},
-            onSelectionChanged: (s) =>
-                setState(() => _onlyUpcoming = s.first),
+            selected: {_filter},
+            onSelectionChanged: (s) => setState(() => _filter = s.first),
           ),
         ),
-        Expanded(
-          child: shown.isEmpty
-              ? const Center(child: Text('Ingen kampar å vise.'))
-              : ListView(children: _groupedByDay(shown)),
-        ),
+        Expanded(child: body),
       ],
     );
+  }
+
+  /// Dei neste (inntil 2) uspelte kampane i kvar gruppe, under gruppe-overskrift.
+  Widget _nextPerGroupList(List<MatchInfo> all, Overrides ovr) {
+    final byGroup = <String, List<MatchInfo>>{};
+    for (final m in all) {
+      if (m.isGroup && actualResult(m, ovr) == null) {
+        byGroup.putIfAbsent(m.group, () => []).add(m);
+      }
+    }
+    final keys = byGroup.keys.toList()..sort();
+    if (keys.isEmpty) {
+      return const Center(child: Text('Ingen kommande gruppekampar.'));
+    }
+    final out = <Widget>[];
+    final scheme = Theme.of(context).colorScheme;
+    for (final g in keys) {
+      final next = byGroup[g]!.take(2).toList(); // all er alt sortert
+      out.add(Padding(
+        padding: const EdgeInsets.fromLTRB(14, 16, 14, 4),
+        child: Row(
+          children: [
+            Icon(Icons.table_chart_outlined, size: 15, color: scheme.primary),
+            const SizedBox(width: 8),
+            Text(g.replaceFirst('Group', 'Gruppe'),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: scheme.primary,
+                    fontSize: 15)),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Divider(color: scheme.primary.withValues(alpha: 0.4))),
+          ],
+        ),
+      ));
+      for (final m in next) {
+        out.add(_matchTile(m));
+      }
+    }
+    out.add(const SizedBox(height: 16));
+    return ListView(children: out);
   }
 
   /// Byggjer lista med ein dato-skiljelinje ("ny dag") føre kvar nye dag.
