@@ -121,6 +121,192 @@ Map<String, String?> actualMedals(List<MatchInfo> matches, Overrides ovr) {
 const _thStyle = TextStyle(
     fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600);
 
+Color advColor(Advance a) {
+  switch (a) {
+    case Advance.direct:
+      return Colors.green;
+    case Advance.thirdIn:
+      return const Color(0xFF8BC34A); // lysegrøn
+    case Advance.thirdOut:
+      return const Color(0xFFF5A623); // oransje
+    case Advance.out:
+      return Colors.red;
+  }
+}
+
+String advLabel(TeamStanding r) {
+  switch (r.advance) {
+    case Advance.direct:
+      return 'Vidare';
+    case Advance.thirdIn:
+      return '3.pl (nr ${r.thirdRank}) → vidare';
+    case Advance.thirdOut:
+      return '3.pl (nr ${r.thirdRank}) → ute';
+    case Advance.out:
+      return 'Ute';
+  }
+}
+
+/// Gjenbrukbart gruppetabell-kort. [showStatus] = vis vidare-status (skru av
+/// før gruppa har spelt nokon kampar, så vi ikkje fargar ei tom 0-0-tabell).
+class GroupTableCard extends StatelessWidget {
+  final List<TeamStanding> rows;
+  final bool showStatus;
+  const GroupTableCard({super.key, required this.rows, this.showStatus = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const SizedBox(width: 22),
+                const SizedBox(width: 24),
+                const Expanded(child: Text('Lag', style: _thStyle)),
+                const SizedBox(
+                    width: 34,
+                    child:
+                        Text('P', textAlign: TextAlign.center, style: _thStyle)),
+                const SizedBox(
+                    width: 40,
+                    child: Text('MF',
+                        textAlign: TextAlign.center, style: _thStyle)),
+                if (showStatus)
+                  const SizedBox(
+                      width: 130,
+                      child: Text('Status',
+                          textAlign: TextAlign.right, style: _thStyle)),
+              ],
+            ),
+            const Divider(height: 10),
+            for (final r in rows)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 14,
+                      height: 14,
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: showStatus
+                            ? advColor(r.advance)
+                            : Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text('${r.rank}',
+                          style: const TextStyle(
+                              fontSize: 9,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    Text(flagFor(r.team), style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(r.team,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w500)),
+                    ),
+                    SizedBox(
+                      width: 34,
+                      child: Text('${r.pts}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: Text(r.gd >= 0 ? '+${r.gd}' : '${r.gd}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[700])),
+                    ),
+                    if (showStatus)
+                      SizedBox(
+                        width: 130,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: advColor(r.advance).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              advLabel(r),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: advColor(r.advance),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Toppnivå-fane: alle gruppetabellane ut frå faktiske resultat (felles).
+class GroupStageView extends StatelessWidget {
+  final List<MatchInfo> matches;
+  final Overrides overrides;
+  const GroupStageView(
+      {super.key, required this.matches, required this.overrides});
+
+  @override
+  Widget build(BuildContext context) {
+    final tables = groupTables(_resultScore(overrides), matches);
+    final keys = tables.keys.toList()..sort();
+    // Tal spelte gruppekampar per gruppe (for å avgjere om status er meiningsfull).
+    final playedByGroup = <String, int>{};
+    for (final m in matches.where((m) => m.isGroup)) {
+      if (actualResult(m, overrides) != null) {
+        playedByGroup[m.group] = (playedByGroup[m.group] ?? 0) + 1;
+      }
+    }
+    return ListView(
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Text(
+            'Gruppetabellar ut frå faktiske resultat. Fyller seg etter kvart '
+            'som kampane vert spelte. Grøn = 1./2.plass (direkte vidare), '
+            'lysegrøn = 3.plass blant dei 8 beste, oransje = 3.plass utanfor, '
+            'raud = ute.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+        for (final g in keys) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(g,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+          ),
+          GroupTableCard(
+            rows: tables[g]!,
+            showStatus: (playedByGroup[g] ?? 0) > 0,
+          ),
+        ],
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
 // ---- Medalje-trafikklys --------------------------------------------------
 // Vurderer om eit medaljetips framleis er oppnåeleg.
 enum MedalFeas { ok, caution, impossible, achieved }
@@ -495,11 +681,13 @@ class _HomePageState extends State<HomePage> {
         builder: (context, constraints) {
           final content = _navIndex == 0
               ? _scoreboard(standings)
-              : UpcomingMatchesView(
-                  matches: _matches,
-                  participants: _visible,
-                  overrides: _ovr!,
-                );
+              : _navIndex == 1
+                  ? GroupStageView(matches: _matches, overrides: _ovr!)
+                  : UpcomingMatchesView(
+                      matches: _matches,
+                      participants: _visible,
+                      overrides: _ovr!,
+                    );
 
           // Smal skjerm (mobil): innhald i full breidde, meny kjem
           // som botnmeny under (sjå bottomNavigationBar).
@@ -518,6 +706,11 @@ class _HomePageState extends State<HomePage> {
                     icon: Icon(Icons.leaderboard_outlined),
                     selectedIcon: Icon(Icons.leaderboard),
                     label: Text('Tavle'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.table_chart_outlined),
+                    selectedIcon: Icon(Icons.table_chart),
+                    label: Text('Gruppespill'),
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.event_outlined),
@@ -541,6 +734,11 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.leaderboard_outlined),
                   selectedIcon: Icon(Icons.leaderboard),
                   label: 'Tavle',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.table_chart_outlined),
+                  selectedIcon: Icon(Icons.table_chart),
+                  label: 'Gruppespill',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.event_outlined),
@@ -714,12 +912,48 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         Expanded(
           child: shown.isEmpty
               ? const Center(child: Text('Ingen kampar å vise.'))
-              : ListView.builder(
-                  itemCount: shown.length,
-                  itemBuilder: (_, i) => _matchTile(shown[i]),
-                ),
+              : ListView(children: _groupedByDay(shown)),
         ),
       ],
+    );
+  }
+
+  /// Byggjer lista med ein dato-skiljelinje ("ny dag") føre kvar nye dag.
+  List<Widget> _groupedByDay(List<MatchInfo> shown) {
+    final out = <Widget>[];
+    String? lastDate;
+    for (final m in shown) {
+      if (m.date != lastDate) {
+        lastDate = m.date;
+        final sameDay = shown.where((x) => x.date == m.date).length;
+        out.add(_dayHeader(m.date, sameDay));
+      }
+      out.add(_matchTile(m));
+    }
+    out.add(const SizedBox(height: 16));
+    return out;
+  }
+
+  Widget _dayHeader(String iso, int count) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 6),
+      child: Row(
+        children: [
+          Icon(Icons.calendar_today, size: 15, color: scheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            _prettyDate(iso),
+            style: TextStyle(
+                fontWeight: FontWeight.bold, color: scheme.primary, fontSize: 15),
+          ),
+          const SizedBox(width: 8),
+          Text('$count ${count == 1 ? 'kamp' : 'kampar'}',
+              style: TextStyle(color: scheme.outline, fontSize: 12)),
+          const SizedBox(width: 10),
+          Expanded(child: Divider(color: scheme.primary.withValues(alpha: 0.4))),
+        ],
+      ),
     );
   }
 
@@ -747,25 +981,18 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 14),
-        title: Row(
-          children: [
-            Text(flagFor(m.team1), style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text('${m.team1} – ${m.team2}',
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-            ),
-            const SizedBox(width: 6),
-            Text(flagFor(m.team2), style: const TextStyle(fontSize: 16)),
-          ],
+        title: Text(
+          '${flagFor(m.team1)} ${m.team1}  –  ${flagFor(m.team2)} ${m.team2}',
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 2),
-          child: Text('${_prettyDate(m.date)} · $label'),
+          child: Text(label),
         ),
         trailing: trailing,
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
         children: [
+          if (m.isGroup) ..._groupTableSection(m),
           if (tippers.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -782,6 +1009,28 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         ],
       ),
     );
+  }
+
+  /// Gruppetabell (faktiske resultat) for gruppa kampen høyrer til.
+  List<Widget> _groupTableSection(MatchInfo m) {
+    final tables = groupTables(_resultScore(widget.overrides), widget.matches);
+    final rows = tables[m.group];
+    if (rows == null) return const [];
+    final played = widget.matches
+        .where((x) => x.group == m.group && actualResult(x, widget.overrides) != null)
+        .length;
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 2),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Tabell · ${m.group.replaceFirst('Group', 'Gruppe')}',
+              style: _thStyle),
+        ),
+      ),
+      GroupTableCard(rows: rows, showStatus: played > 0),
+      const SizedBox(height: 6),
+    ];
   }
 
   Widget _tipRow(Participant p, MatchInfo m, List<int>? act) {
@@ -1007,126 +1256,11 @@ class _ParticipantPageState extends State<ParticipantPage> {
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
           ),
-          if (tables[g] != null) _groupTable(tables[g]!),
+          if (tables[g] != null) GroupTableCard(rows: tables[g]!),
           for (final m in groups[g]!) _matchTile(m),
         ],
         const SizedBox(height: 24),
       ],
-    );
-  }
-
-  static Color _advColor(Advance a) {
-    switch (a) {
-      case Advance.direct:
-        return Colors.green;
-      case Advance.thirdIn:
-        return const Color(0xFF8BC34A); // lysegrøn
-      case Advance.thirdOut:
-        return const Color(0xFFF5A623); // oransje
-      case Advance.out:
-        return Colors.red;
-    }
-  }
-
-  static String _advLabel(TeamStanding r) {
-    switch (r.advance) {
-      case Advance.direct:
-        return 'Vidare';
-      case Advance.thirdIn:
-        return '3.pl (nr ${r.thirdRank}) → vidare';
-      case Advance.thirdOut:
-        return '3.pl (nr ${r.thirdRank}) → ute';
-      case Advance.out:
-        return 'Ute';
-    }
-  }
-
-  Widget _groupTable(List<TeamStanding> rows) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Column(
-          children: [
-            // Kolonneoverskrifter.
-            Row(
-              children: const [
-                SizedBox(width: 22),
-                SizedBox(width: 24),
-                Expanded(child: Text('Lag', style: _thStyle)),
-                SizedBox(width: 34, child: Text('P', textAlign: TextAlign.center, style: _thStyle)),
-                SizedBox(width: 40, child: Text('MF', textAlign: TextAlign.center, style: _thStyle)),
-                SizedBox(width: 130, child: Text('Status', textAlign: TextAlign.right, style: _thStyle)),
-              ],
-            ),
-            const Divider(height: 10),
-            for (final r in rows)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 14,
-                      height: 14,
-                      alignment: Alignment.center,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: _advColor(r.advance),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text('${r.rank}',
-                          style: const TextStyle(
-                              fontSize: 9,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                    Text(flagFor(r.team), style: const TextStyle(fontSize: 16)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(r.team,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w500)),
-                    ),
-                    SizedBox(
-                      width: 34,
-                      child: Text('${r.pts}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    SizedBox(
-                      width: 40,
-                      child: Text(r.gd >= 0 ? '+${r.gd}' : '${r.gd}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[700])),
-                    ),
-                    SizedBox(
-                      width: 130,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _advColor(r.advance).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            _advLabel(r),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: _advColor(r.advance),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1140,8 +1274,9 @@ class _ParticipantPageState extends State<ParticipantPage> {
 
     return ListTile(
       dense: true,
-      title: Text('${m.team1} – ${m.team2}'),
-      subtitle: Text('${m.date} · ${m.ground}'
+      title: Text(
+          '${flagFor(m.team1)} ${m.team1}  –  ${flagFor(m.team2)} ${m.team2}'),
+      subtitle: Text('${_prettyDate(m.date)} · ${m.ground}'
           '${overridden ? ' · (manuelt)' : ''}'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
