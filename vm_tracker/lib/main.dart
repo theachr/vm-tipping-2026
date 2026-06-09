@@ -1155,6 +1155,9 @@ class _ParticipantPageState extends State<ParticipantPage> {
   // projeksjon (tipping). Treet skal i utgangspunktet vise resultata.
   bool _bracketResults = true;
 
+  // Gruppetabell-modus: same logikk – tabellen viser resultata som standard.
+  bool _groupResults = true;
+
   Standing get _standing => standingFor(_p, _matches, _ovr);
 
   @override
@@ -1285,30 +1288,66 @@ class _ParticipantPageState extends State<ParticipantPage> {
       groups.putIfAbsent(m.group, () => []).add(m);
     }
     final keys = groups.keys.toList()..sort();
-    // Tabellar ut frå deltakaren si tipping (projeksjon).
-    final tables = groupTables(_tipsScore(_p), _matches);
+    // Resultat-modus: faktiske resultat (felles). Projeksjon: dine tips.
+    final tables = _groupResults
+        ? groupTables(_resultScore(_ovr), _matches)
+        : groupTables(_tipsScore(_p), _matches);
+    // Tal spelte gruppekampar per gruppe (for status-fargen i Resultat-modus).
+    final playedByGroup = <String, int>{};
+    for (final m in _matches.where((m) => m.isGroup)) {
+      if (actualResult(m, _ovr) != null) {
+        playedByGroup[m.group] = (playedByGroup[m.group] ?? 0) + 1;
+      }
+    }
     return ListView(
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Text(
-            'Tabellane er rekna ut frå dine tips. Fargen viser kven som går '
-            'vidare: grøn = 1./2.plass (direkte), lysegrøn = 3.plass blant dei '
-            '8 beste, oransje = 3.plass utanfor topp 8, raud = ute. '
-            'Tala i parentes er plasseringa di blant alle 12 trearane.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              SegmentedButton<bool>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                      value: true,
+                      label: Text('Resultat'),
+                      icon: Icon(Icons.sports_soccer)),
+                  ButtonSegment(
+                      value: false,
+                      label: Text('Projeksjon'),
+                      icon: Icon(Icons.insights)),
+                ],
+                selected: {_groupResults},
+                onSelectionChanged: (s) =>
+                    setState(() => _groupResults = s.first),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _groupResults
+                      ? 'Faktiske resultat. Poenga fyller seg etter kvart som '
+                          'kampane vert spelte.'
+                      : '${_p.name} si projeksjon ut frå tippingane.',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+            ],
           ),
         ),
         for (final g in keys) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Text(g,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
           ),
-          if (tables[g] != null) GroupTableCard(rows: tables[g]!),
+          if (tables[g] != null)
+            GroupTableCard(
+              rows: tables[g]!,
+              showStatus: _groupResults ? (playedByGroup[g] ?? 0) > 0 : true,
+            ),
           for (final m in groups[g]!) _matchTile(m),
         ],
         const SizedBox(height: 24),
