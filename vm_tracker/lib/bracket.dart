@@ -123,6 +123,75 @@ Map<String, List<String>> standingsFromScore(
       .map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
 }
 
+/// Korleis eit lag går vidare frå gruppa.
+enum Advance {
+  direct, // 1. eller 2.plass – direkte vidare
+  thirdIn, // 3.plass blant dei 8 beste – vidare
+  thirdOut, // 3.plass, men ikkje blant dei 8 beste – ute
+  out, // 4.plass – ute
+}
+
+/// Ei visningsklar rad i ein gruppetabell.
+class TeamStanding {
+  final int rank; // 1..4
+  final String team;
+  final int pts, gf, ga;
+  final Advance advance;
+  final int? thirdRank; // plassering (1..12) blant 3.plassane, berre for 3.plass
+  const TeamStanding({
+    required this.rank,
+    required this.team,
+    required this.pts,
+    required this.gf,
+    required this.ga,
+    required this.advance,
+    this.thirdRank,
+  });
+  int get gd => gf - ga;
+}
+
+/// Fulle gruppetabellar med rangering og vidare-status (inkl. beste 8 av
+/// 3.plassane). "Group X" -> rader sortert 1.,2.,3.,4.
+Map<String, List<TeamStanding>> groupTables(
+    ScoreFor scoreFor, List<MatchInfo> matches,
+    {bool requireComplete = false}) {
+  final rich =
+      _richStandings(scoreFor, matches, requireComplete: requireComplete);
+  // Rangér alle 3.plassane og finn dei 8 beste.
+  final thirds = <_GroupRow>[];
+  rich.forEach((g, rows) {
+    if (rows.length >= 3) thirds.add(rows[2]);
+  });
+  thirds.sort(_cmpStanding);
+  final thirdRankOf = <String, int>{
+    for (var i = 0; i < thirds.length; i++) thirds[i].team: i + 1,
+  };
+  final qualifiedThirds = thirds.take(8).map((r) => r.team).toSet();
+
+  final out = <String, List<TeamStanding>>{};
+  rich.forEach((g, rows) {
+    out[g] = [
+      for (var i = 0; i < rows.length; i++)
+        TeamStanding(
+          rank: i + 1,
+          team: rows[i].team,
+          pts: rows[i].pts,
+          gf: rows[i].gf,
+          ga: rows[i].ga,
+          advance: i < 2
+              ? Advance.direct
+              : (i == 2
+                  ? (qualifiedThirds.contains(rows[i].team)
+                      ? Advance.thirdIn
+                      : Advance.thirdOut)
+                  : Advance.out),
+          thirdRank: i == 2 ? thirdRankOf[rows[i].team] : null,
+        ),
+    ];
+  });
+  return out;
+}
+
 final _slotRe = RegExp(r'^([12])([A-L])$');
 final _wlRe = RegExp(r'^([WL])(\d+)$');
 

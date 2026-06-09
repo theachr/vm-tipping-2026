@@ -118,6 +118,9 @@ Map<String, String?> actualMedals(List<MatchInfo> matches, Overrides ovr) {
   return {'gold': gold, 'silver': silver, 'bronze': bronze};
 }
 
+const _thStyle = TextStyle(
+    fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600);
+
 // ---- Medalje-trafikklys --------------------------------------------------
 // Vurderer om eit medaljetips framleis er oppnåeleg.
 enum MedalFeas { ok, caution, impossible, achieved }
@@ -981,8 +984,20 @@ class _ParticipantPageState extends State<ParticipantPage> {
       groups.putIfAbsent(m.group, () => []).add(m);
     }
     final keys = groups.keys.toList()..sort();
+    // Tabellar ut frå deltakaren si tipping (projeksjon).
+    final tables = groupTables(_tipsScore(_p), _matches);
     return ListView(
       children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Text(
+            'Tabellane er rekna ut frå dine tips. Fargen viser kven som går '
+            'vidare: grøn = 1./2.plass (direkte), lysegrøn = 3.plass blant dei '
+            '8 beste, oransje = 3.plass utanfor topp 8, raud = ute. '
+            'Tala i parentes er plasseringa di blant alle 12 trearane.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
         for (final g in keys) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -992,10 +1007,126 @@ class _ParticipantPageState extends State<ParticipantPage> {
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
           ),
+          if (tables[g] != null) _groupTable(tables[g]!),
           for (final m in groups[g]!) _matchTile(m),
         ],
         const SizedBox(height: 24),
       ],
+    );
+  }
+
+  static Color _advColor(Advance a) {
+    switch (a) {
+      case Advance.direct:
+        return Colors.green;
+      case Advance.thirdIn:
+        return const Color(0xFF8BC34A); // lysegrøn
+      case Advance.thirdOut:
+        return const Color(0xFFF5A623); // oransje
+      case Advance.out:
+        return Colors.red;
+    }
+  }
+
+  static String _advLabel(TeamStanding r) {
+    switch (r.advance) {
+      case Advance.direct:
+        return 'Vidare';
+      case Advance.thirdIn:
+        return '3.pl (nr ${r.thirdRank}) → vidare';
+      case Advance.thirdOut:
+        return '3.pl (nr ${r.thirdRank}) → ute';
+      case Advance.out:
+        return 'Ute';
+    }
+  }
+
+  Widget _groupTable(List<TeamStanding> rows) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Column(
+          children: [
+            // Kolonneoverskrifter.
+            Row(
+              children: const [
+                SizedBox(width: 22),
+                SizedBox(width: 24),
+                Expanded(child: Text('Lag', style: _thStyle)),
+                SizedBox(width: 34, child: Text('P', textAlign: TextAlign.center, style: _thStyle)),
+                SizedBox(width: 40, child: Text('MF', textAlign: TextAlign.center, style: _thStyle)),
+                SizedBox(width: 130, child: Text('Status', textAlign: TextAlign.right, style: _thStyle)),
+              ],
+            ),
+            const Divider(height: 10),
+            for (final r in rows)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 14,
+                      height: 14,
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: _advColor(r.advance),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text('${r.rank}',
+                          style: const TextStyle(
+                              fontSize: 9,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    Text(flagFor(r.team), style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(r.team,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w500)),
+                    ),
+                    SizedBox(
+                      width: 34,
+                      child: Text('${r.pts}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: Text(r.gd >= 0 ? '+${r.gd}' : '${r.gd}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[700])),
+                    ),
+                    SizedBox(
+                      width: 130,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _advColor(r.advance).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _advLabel(r),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _advColor(r.advance),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
