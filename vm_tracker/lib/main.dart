@@ -865,8 +865,50 @@ String _prettyDate(String iso) {
   return iso;
 }
 
-/// Sorteringsnøkkel: dato + tid (begge tekstsorterbare i openfootball).
-String _sortKey(MatchInfo m) => '${m.date} ${m.time}';
+// openfootball lagrar tid som "HH:mm UTC±N" (spelstaden si lokaltid).
+final _timeRe = RegExp(r'^(\d{1,2}):(\d{2})\s*UTC([+-]\d{1,2})$');
+
+// Noreg er på sommartid (CEST = UTC+2) heile VM-vindauget (11. juni–19. juli),
+// så vi kan bruke ein fast offset.
+const _osloOffset = 2;
+
+/// Kamptidspunktet i norsk tid, eller null om tid/dato ikkje kan tolkast.
+DateTime? _osloDateTime(MatchInfo m) {
+  final t = _timeRe.firstMatch(m.time.trim());
+  final d = m.date.split('-');
+  if (t == null || d.length != 3) return null;
+  final y = int.tryParse(d[0]),
+      mo = int.tryParse(d[1]),
+      da = int.tryParse(d[2]);
+  final hh = int.parse(t[1]!), mm = int.parse(t[2]!), off = int.parse(t[3]!);
+  if (y == null || mo == null || da == null) return null;
+  // Lokal veggklokke -> UTC -> Oslo.
+  final utc = DateTime.utc(y, mo, da, hh, mm).subtract(Duration(hours: off));
+  return utc.add(const Duration(hours: _osloOffset));
+}
+
+String _two(int n) => n.toString().padLeft(2, '0');
+
+/// Klokkeslett i norsk tid ("21:00"), elles rå tid som fallback.
+String _osloTime(MatchInfo m) {
+  final dt = _osloDateTime(m);
+  if (dt == null) return m.time;
+  return '${_two(dt.hour)}:${_two(dt.minute)}';
+}
+
+/// Dato (ISO) i norsk tid – kan rulle over til neste dag for seine kampar.
+String _osloDateIso(MatchInfo m) {
+  final dt = _osloDateTime(m);
+  if (dt == null) return m.date;
+  return '${dt.year}-${_two(dt.month)}-${_two(dt.day)}';
+}
+
+/// Sorteringsnøkkel: faktisk tidspunkt (UTC-instans), elles rå streng.
+String _sortKey(MatchInfo m) {
+  final dt = _osloDateTime(m);
+  if (dt == null) return '${m.date} ${m.time}';
+  return dt.toIso8601String();
+}
 
 class UpcomingMatchesView extends StatefulWidget {
   final List<MatchInfo> matches;
@@ -975,10 +1017,11 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     final out = <Widget>[];
     String? lastDate;
     for (final m in shown) {
-      if (m.date != lastDate) {
-        lastDate = m.date;
-        final sameDay = shown.where((x) => x.date == m.date).length;
-        out.add(_dayHeader(m.date, sameDay));
+      final day = _osloDateIso(m);
+      if (day != lastDate) {
+        lastDate = day;
+        final sameDay = shown.where((x) => _osloDateIso(x) == day).length;
+        out.add(_dayHeader(day, sameDay));
       }
       out.add(_matchTile(m));
     }
@@ -1025,8 +1068,16 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
       trailing = Text('${act[0]}–${act[1]}',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
     } else {
-      trailing = Text(m.time,
-          style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600));
+      trailing = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(_osloTime(m),
+              style: TextStyle(
+                  color: scheme.outline, fontWeight: FontWeight.w600)),
+          const Text('norsk tid', style: TextStyle(fontSize: 9, color: Colors.grey)),
+        ],
+      );
     }
 
     return Card(
@@ -1367,7 +1418,7 @@ class _ParticipantPageState extends State<ParticipantPage> {
       dense: true,
       title: Text(
           '${flagFor(m.team1)} ${m.team1}  –  ${flagFor(m.team2)} ${m.team2}'),
-      subtitle: Text('${_prettyDate(m.date)} · ${m.ground}'
+      subtitle: Text('${_prettyDate(_osloDateIso(m))} ${_osloTime(m)} · ${m.ground}'
           '${overridden ? ' · (manuelt)' : ''}'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
