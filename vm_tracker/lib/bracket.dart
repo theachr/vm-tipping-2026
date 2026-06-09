@@ -195,6 +195,131 @@ Map<String, List<TeamStanding>> groupTables(
 final _slotRe = RegExp(r'^([12])([A-L])$');
 final _wlRe = RegExp(r'^([WL])(\d+)$');
 
+// ---- Scenario-veljar: "kven møter laget i sluttspelet" ---------------------
+
+/// Eitt steg på vegen gjennom sluttspelet.
+class ScenarioStep {
+  final String round; // lesbar runde, t.d. "16-delsfinale"
+  final int matchNum;
+  final String opponent; // lesbar motstandar-skildring
+  const ScenarioStep(this.round, this.matchNum, this.opponent);
+}
+
+/// Resultatet av eit scenario.
+class Scenario {
+  final String slotLabel; // t.d. "vinnar av gruppe I"
+  final List<ScenarioStep> steps;
+  final String? note; // forklaring (t.d. for 3.plass)
+  const Scenario(this.slotLabel, this.steps, {this.note});
+}
+
+String _roundNo(String r) {
+  switch (r) {
+    case 'Round of 32':
+      return '32-delsfinale';
+    case 'Round of 16':
+      return '16-delsfinale';
+    case 'Quarter-final':
+      return 'Kvartfinale';
+    case 'Semi-final':
+      return 'Semifinale';
+    case 'Final':
+      return 'Finale';
+    case 'Match for third place':
+      return 'Bronsefinale';
+    default:
+      return r;
+  }
+}
+
+/// Gjer ein plassholdarkode lesbar. [expand] viser dei to laga i ein W/L-kamp.
+String _describeCode(String code, Map<int, MatchInfo> byNum,
+    {bool expand = true}) {
+  final s = _slotRe.firstMatch(code);
+  if (s != null) {
+    return s[1] == '1' ? 'vinnar av gruppe ${s[2]}' : '2.-plass i gruppe ${s[2]}';
+  }
+  final third = _thirdGroups(code);
+  if (third != null) return '3.-plass (ein av ${third.join('/')})';
+  final wl = _wlRe.firstMatch(code);
+  if (wl != null) {
+    final n = int.parse(wl[2]!);
+    final verb = wl[1] == 'W' ? 'vinnaren' : 'taparen';
+    final fm = byNum[n];
+    if (expand && fm != null) {
+      final a = _describeCode(fm.team1, byNum, expand: false);
+      final b = _describeCode(fm.team2, byNum, expand: false);
+      return '$verb av kamp $n ($a vs $b)';
+    }
+    return '$verb av kamp $n';
+  }
+  return code;
+}
+
+/// Reknar ut kven eit lag møter runde for runde i sluttspelet dersom det
+/// kjem vidare som [placement] (1, 2 eller 3) frå gruppe [group].
+/// Følgjer vinnar-vegen heilt til finalen (føreset at laget held fram).
+Scenario scenarioPath({
+  required List<MatchInfo> matches,
+  required String group, // 'I'
+  required int placement, // 1, 2, 3
+}) {
+  final ko = matches.where((m) => !m.isGroup).toList()
+    ..sort((a, b) => a.num.compareTo(b.num));
+  final byNum = {for (final m in ko) m.num: m};
+  // nextOf[n] = kampen vinnaren av kamp n går vidare til.
+  final nextOf = <int, int>{};
+  for (final m in ko) {
+    for (final c in [m.team1, m.team2]) {
+      final wl = _wlRe.firstMatch(c);
+      if (wl != null && wl[1] == 'W') nextOf[int.parse(wl[2]!)] = m.num;
+    }
+  }
+
+  if (placement == 3) {
+    final steps = <ScenarioStep>[];
+    for (final m in ko.where((m) => m.round == 'Round of 32')) {
+      for (final c in [m.team1, m.team2]) {
+        final g = _thirdGroups(c);
+        if (g != null && g.contains(group)) {
+          final opp = c == m.team1 ? m.team2 : m.team1;
+          steps.add(ScenarioStep(
+              _roundNo(m.round), m.num, _describeCode(opp, byNum)));
+        }
+      }
+    }
+    return Scenario('3.-plass i gruppe $group', steps,
+        note: 'Kvar ein 3.-plass hamnar avheng av kva andre 3.-plassar som '
+            'går vidare. Dette er dei moglege opningskampane.');
+  }
+
+  final startCode = '$placement$group';
+  MatchInfo? start;
+  for (final m in ko) {
+    if (m.team1 == startCode || m.team2 == startCode) {
+      start = m;
+      break;
+    }
+  }
+  final slotLabel =
+      placement == 1 ? 'vinnar av gruppe $group' : '2.-plass i gruppe $group';
+  if (start == null) return Scenario(slotLabel, const []);
+
+  final steps = <ScenarioStep>[];
+  MatchInfo? cur = start;
+  var incoming = startCode;
+  while (cur != null) {
+    final opp = cur.team1 == incoming ? cur.team2 : cur.team1;
+    steps.add(
+        ScenarioStep(_roundNo(cur.round), cur.num, _describeCode(opp, byNum)));
+    final nx = nextOf[cur.num];
+    if (nx == null) break;
+    incoming = 'W${cur.num}';
+    cur = byNum[nx];
+  }
+  return Scenario(slotLabel, steps);
+}
+
 /// Parsar ein 3.plass-kode som "3A/B/C/D/F" til gruppebokstavane den kan ta imot.
 /// Returnerer null om koden ikkje er ein 3.plass-plass.
 List<String>? _thirdGroups(String code) {

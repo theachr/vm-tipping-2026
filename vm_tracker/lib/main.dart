@@ -257,32 +257,183 @@ class GroupTableCard extends StatelessWidget {
   }
 }
 
-/// Toppnivå-fane: sluttspeloppsettet (felles) ut frå faktiske resultat.
-class KnockoutView extends StatelessWidget {
+/// Toppnivå-fane: sluttspeloppsettet (felles) ut frå faktiske resultat,
+/// med ein scenario-veljar ("kven møter laget vidare").
+class KnockoutView extends StatefulWidget {
   final List<MatchInfo> matches;
   final Overrides overrides;
   const KnockoutView(
       {super.key, required this.matches, required this.overrides});
 
   @override
+  State<KnockoutView> createState() => _KnockoutViewState();
+}
+
+class _KnockoutViewState extends State<KnockoutView> {
+  String? _team;
+  int _placement = 1;
+
+  /// Lagnamn -> gruppebokstav (A..L), frå gruppekampane.
+  Map<String, String> get _teamGroup {
+    final out = <String, String>{};
+    for (final m in widget.matches.where((m) => m.isGroup)) {
+      final letter = m.group.replaceFirst('Group ', '');
+      out[m.team1] = letter;
+      out[m.team2] = letter;
+    }
+    return out;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ko = buildBracket(
-      scoreFor: _resultScore(overrides),
-      matches: matches,
-      winnerSide: (m) => winnerSideOf(m, overrides),
+      scoreFor: _resultScore(widget.overrides),
+      matches: widget.matches,
+      winnerSide: (m) => winnerSideOf(m, widget.overrides),
       requireComplete: true,
     );
-    final medals = actualMedals(matches, overrides);
+    final medals = actualMedals(widget.matches, widget.overrides);
     final highlight = <String>{
       for (final v in medals.values) ?v,
     };
-    return BracketView(
-      matches: ko,
-      highlight: highlight,
-      caption: 'Sluttspeloppsettet ut frå faktiske resultat (felles for alle). '
-          'Plassane (1A, 2B, 3.-arar, vinnar/tapar av kamp) fyller seg med '
-          'ekte lag etter kvart som gruppene og sluttspelkampane blir spelte. '
-          'Venstre og høgre halvdel møtest i finalen i midten.',
+    return Column(
+      children: [
+        _scenarioCard(),
+        Expanded(
+          child: BracketView(
+            matches: ko,
+            highlight: highlight,
+            caption:
+                'Sluttspeloppsettet ut frå faktiske resultat (felles for alle). '
+                'Plassane (1A, 2B, 3.-arar, vinnar/tapar av kamp) fyller seg med '
+                'ekte lag etter kvart som gruppene og sluttspelkampane blir spelte. '
+                'Venstre og høgre halvdel møtest i finalen i midten.',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _scenarioCard() {
+    final scheme = Theme.of(context).colorScheme;
+    final teamGroup = _teamGroup;
+    final teams = teamGroup.keys.toList()..sort();
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.help_outline, size: 18, color: scheme.primary),
+                const SizedBox(width: 6),
+                const Text('Spør om sluttspelet',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Vel eit lag og kva plassering du tenkjer deg – så viser eg kven '
+              'dei møter runde for runde (om dei held fram).',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SizedBox(
+                  width: 220,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _team,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Lag',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      for (final t in teams)
+                        DropdownMenuItem(
+                          value: t,
+                          child: Text('${flagFor(t)} $t (gr. ${teamGroup[t]})',
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _team = v),
+                  ),
+                ),
+                SegmentedButton<int>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(value: 1, label: Text('Vinnar')),
+                    ButtonSegment(value: 2, label: Text('2.-plass')),
+                    ButtonSegment(value: 3, label: Text('3.-plass')),
+                  ],
+                  selected: {_placement},
+                  onSelectionChanged: (s) =>
+                      setState(() => _placement = s.first),
+                ),
+              ],
+            ),
+            if (_team != null) ...[
+              const SizedBox(height: 12),
+              _scenarioResult(teamGroup[_team!]!),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _scenarioResult(String group) {
+    final scheme = Theme.of(context).colorScheme;
+    final sc = scenarioPath(
+        matches: widget.matches, group: group, placement: _placement);
+    if (sc.steps.isEmpty) {
+      return Text('Fann ingen sluttspelveg for dette valet.',
+          style: TextStyle(color: scheme.outline));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$_team som ${sc.slotLabel} møter:',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        for (final s in sc.steps)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('• '),
+                Expanded(
+                  child: Text.rich(TextSpan(children: [
+                    TextSpan(
+                        text: '${s.round} ',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    TextSpan(
+                        text: '(kamp ${s.matchNum}): ',
+                        style: TextStyle(color: scheme.outline)),
+                    TextSpan(text: s.opponent),
+                  ])),
+                ),
+              ],
+            ),
+          ),
+        if (sc.note != null) ...[
+          const SizedBox(height: 6),
+          Text(sc.note!,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.outline,
+                  fontStyle: FontStyle.italic)),
+        ],
+      ],
     );
   }
 }
