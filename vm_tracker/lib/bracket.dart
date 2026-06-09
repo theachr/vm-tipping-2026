@@ -114,6 +114,15 @@ Map<String, List<String>> predictedStandings(
       .map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
 }
 
+/// Gruppetabellar (rangerte lagnamn) ut frå ei vilkårleg resultatkjelde.
+/// Med [requireComplete] vert berre ferdigspelte grupper tekne med.
+Map<String, List<String>> standingsFromScore(
+    ScoreFor scoreFor, List<MatchInfo> matches,
+    {bool requireComplete = false}) {
+  return _richStandings(scoreFor, matches, requireComplete: requireComplete)
+      .map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
+}
+
 final _slotRe = RegExp(r'^([12])([A-L])$');
 final _wlRe = RegExp(r'^([WL])(\d+)$');
 

@@ -118,6 +118,127 @@ Map<String, String?> actualMedals(List<MatchInfo> matches, Overrides ovr) {
   return {'gold': gold, 'silver': silver, 'bronze': bronze};
 }
 
+// ---- Medalje-trafikklys --------------------------------------------------
+// Vurderer om eit medaljetips framleis er oppnåeleg.
+enum MedalFeas { ok, caution, impossible, achieved }
+
+class MedalEval {
+  final MedalFeas status;
+  final String reason;
+  const MedalEval(this.status, this.reason);
+}
+
+ScoreFor _tipsScore(Participant p) => (m) => p.forMatch(m.team1, m.team2);
+ScoreFor _resultScore(Overrides ovr) => (m) {
+      final a = actualResult(m, ovr);
+      return a == null ? null : {m.team1: a[0], m.team2: a[1]};
+    };
+
+/// Lag som er slått ut i verkelegheita: taparar av spelte sluttspelkampar, og
+/// lag som vart sist i ei ferdigspelt gruppe (4.plass kan ikkje gå vidare).
+Set<String> _eliminatedTeams(List<MatchInfo> matches, Overrides ovr) {
+  final out = <String>{};
+  final score = _resultScore(ovr);
+  // Sisteplass i ferdigspelte grupper kan ikkje gå vidare.
+  final st = standingsFromScore(score, matches, requireComplete: true);
+  for (final rows in st.values) {
+    if (rows.length == 4) out.add(rows.last);
+  }
+  // Taparar av spelte sluttspelkampar.
+  final ko = buildBracket(
+    scoreFor: score,
+    matches: matches,
+    winnerSide: (m) => winnerSideOf(m, ovr),
+    requireComplete: true,
+  );
+  final byNum = {for (final m in matches) m.num: m};
+  for (final km in ko) {
+    final mi = byNum[km.num];
+    if (mi == null) continue;
+    final w = winnerSideOf(mi, ovr);
+    final loser = w == 1 ? km.away : (w == 2 ? km.home : null);
+    if (loser != null && loser.resolved) out.add(loser.team!);
+  }
+  return out;
+}
+
+/// Per-medalje status for trafikklyset.
+Map<String, MedalEval> evalMedals(
+    Participant p, List<MatchInfo> matches, Overrides ovr) {
+  final picks = p.medals; // gold/silver/bronze -> lagnamn
+  final actual = actualMedals(matches, ovr);
+  final eliminated = _eliminatedTeams(matches, ovr);
+
+  // Projisert halvdel (frå deltakaren sine tips) for kvar kvalifisert lag.
+  final proj = buildBracket(
+    scoreFor: _tipsScore(p),
+    matches: matches,
+    winnerSide: (m) => winnerSideOf(m, ovr),
+  );
+  final leftR32 = _leftRounds[0].toSet();
+  final rightR32 = _rightRounds[0].toSet();
+  final halfOf = <String, String>{}; // lagnamn -> 'V'/'H'
+  for (final km in proj) {
+    final isLeft = leftR32.contains(km.num);
+    final isRight = rightR32.contains(km.num);
+    if (!isLeft && !isRight) continue;
+    final h = isLeft ? 'V' : 'H';
+    if (km.home.resolved) halfOf[km.home.team!] = h;
+    if (km.away.resolved) halfOf[km.away.team!] = h;
+  }
+  final qualified = halfOf.keys.toSet();
+
+  final gold = picks['gold'], silver = picks['silver'];
+  final sameHalf = gold != null &&
+      silver != null &&
+      halfOf[gold] != null &&
+      halfOf[gold] == halfOf[silver];
+
+  MedalEval eval(String key, String medalLabel, String? finalMedalKey) {
+    final team = picks[key];
+    if (team == null || team.isEmpty) {
+      return const MedalEval(MedalFeas.caution, 'Inkje tips');
+    }
+    // 1) Allereie avgjord i verkelegheita?
+    final decided = actual[finalMedalKey];
+    if (decided != null) {
+      return decided == team
+          ? MedalEval(MedalFeas.achieved, 'Oppnådd – $medalLabel sikra')
+          : MedalEval(MedalFeas.impossible, '$medalLabel gjekk til $decided');
+    }
+    // 2) Slått ut?
+    if (eliminated.contains(team)) {
+      return MedalEval(MedalFeas.impossible, '$team er alt ute');
+    }
+    // 3) Duplikat?
+    final others = [
+      for (final e in picks.entries)
+        if (e.key != key) e.value
+    ];
+    if (others.contains(team)) {
+      return const MedalEval(
+          MedalFeas.impossible, 'Same lag er tippa på fleire medaljar');
+    }
+    // 4) Kvalifiserer laget i deltakaren si eiga projeksjon?
+    if (!qualified.contains(team)) {
+      return MedalEval(MedalFeas.caution,
+          'Mogleg, men dine tips har $team ute av gruppespelet');
+    }
+    // 5) Gull/sølv på same halvdel (møtest før finalen) i eigne tips?
+    if ((key == 'gold' || key == 'silver') && sameHalf) {
+      return const MedalEval(MedalFeas.caution,
+          'Gull og sølv hamnar på same halvdel i dine tips – dei møtest før finalen');
+    }
+    return const MedalEval(MedalFeas.ok, 'Mogleg og i tråd med dine tips');
+  }
+
+  return {
+    'gold': eval('gold', 'Gull', 'gold'),
+    'silver': eval('silver', 'Sølv', 'silver'),
+    'bronze': eval('bronze', 'Bronse', 'bronze'),
+  };
+}
+
 int matchPointsFor(Participant p, MatchInfo m, Overrides ovr) {
   final pred = p.forMatch(m.team1, m.team2);
   final act = actualResult(m, ovr);
@@ -819,12 +940,26 @@ class _ParticipantPageState extends State<ParticipantPage> {
 
   Widget _medalTab() {
     final actual = actualMedals(_matches, _ovr);
+    final feas = evalMedals(_p, _matches, _ovr);
     return ListView(
       children: [
         _MedalCard(
           picks: _p.medals,
           actual: actual,
+          feas: feas,
           points: medalPoints(_p.medals, actual),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: Text(
+            'Fargeprikk = om medaljen framleis går an:\n'
+            '🟢 grøn = mogleg og i tråd med dine tips\n'
+            '🟡 gul = mogleg, men dine tips gjev ein konflikt (t.d. gull og '
+            'sølv på same halvdel – då møtest dei før finalen)\n'
+            '🔴 raud = umogleg (laget er alt ute, eller medaljen er avgjord).\n'
+            'Hald peikaren over prikken for forklaring.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ),
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -1031,9 +1166,25 @@ class _PointsBadge extends StatelessWidget {
 class _MedalCard extends StatelessWidget {
   final Map<String, String> picks;
   final Map<String, String?> actual;
+  final Map<String, MedalEval> feas;
   final int points;
   const _MedalCard(
-      {required this.picks, required this.actual, required this.points});
+      {required this.picks,
+      required this.actual,
+      required this.feas,
+      required this.points});
+
+  static Color _dotColor(MedalFeas s) {
+    switch (s) {
+      case MedalFeas.ok:
+      case MedalFeas.achieved:
+        return Colors.green;
+      case MedalFeas.caution:
+        return const Color(0xFFF5A623); // gul/oransje
+      case MedalFeas.impossible:
+        return Colors.red;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1041,10 +1192,24 @@ class _MedalCard extends StatelessWidget {
       final pick = picks[key] ?? '';
       final act = actual[key];
       final correct = act != null && act == pick;
+      final ev = feas[key];
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
+            if (ev != null)
+              Tooltip(
+                message: ev.reason,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: _dotColor(ev.status),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
             Text(emoji, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 8),
             Expanded(child: Text('$place: $pick')),
