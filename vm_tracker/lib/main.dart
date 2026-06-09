@@ -1040,27 +1040,49 @@ class _MedalCard extends StatelessWidget {
   }
 }
 
-// ---- Sluttspeltre ----
+// ---- Sluttspeltre (to-sidig: venstre + høgre møtest i finalen i midten) ----
 
-const double _cardW = 200;
+const double _cardW = 190;
 const double _cardH = 64;
-const double _vGap = 16;
-const double _colGap = 64;
-const double _leftPad = 88;
-const double _topPad = 48;
+const double _vGap = 14;
+const double _colGap = 52;
+const double _leftPad = 24;
+const double _topPad = 56;
+const double _titleH = 18; // høgd til tittel over eit kort
 
-// Kampnummer per runde, ordna vertikalt slik at treet koplar seg pent.
-const _rounds = <List<int>>[
-  [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87],
-  [89, 90, 93, 94, 91, 92, 95, 96],
-  [97, 98, 99, 100],
-  [101, 102],
-  [104],
+// Venstre halvdel (veks mot høgre): R32 -> R16 -> QF -> SF.
+const _leftRounds = <List<int>>[
+  [74, 77, 73, 75, 83, 84, 81, 82],
+  [89, 90, 93, 94],
+  [97, 98],
+  [101],
 ];
-const _roundTitles = ['32-del', '16-del', 'Kvartfinale', 'Semifinale', 'Finale'];
+// Høgre halvdel (veks mot venstre, spegla).
+const _rightRounds = <List<int>>[
+  [76, 78, 79, 80, 86, 88, 85, 87],
+  [91, 92, 95, 96],
+  [99, 100],
+  [102],
+];
+const _finalNum = 104;
 const _thirdNum = 103;
+const _finalCol = 4; // midtkolonne
+const _roundTitles = ['32-del', '16-del', 'Kvartfinale', 'Semifinale'];
 
-double _colLeft(int r) => _leftPad + r * (_cardW + _colGap);
+double _colX(int col) => _leftPad + col * (_cardW + _colGap);
+int _leftCol(int r) => r; // 0..3
+int _rightCol(int r) => 8 - r; // 8..5
+
+/// Vertikale senter per runde for ei halvdel med [leaf] kort i fyrste runde.
+List<List<double>> _mkCenters(int leaf) {
+  final c = <List<double>>[];
+  c.add([for (var i = 0; i < leaf; i++) _topPad + _cardH / 2 + i * (_cardH + _vGap)]);
+  for (var r = 1; r < 4; r++) {
+    final prev = c[r - 1];
+    c.add([for (var k = 0; k < prev.length ~/ 2; k++) (prev[2 * k] + prev[2 * k + 1]) / 2]);
+  }
+  return c;
+}
 
 class BracketView extends StatelessWidget {
   final List<KoMatch> matches;
@@ -1070,78 +1092,61 @@ class BracketView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final byNum = {for (final m in matches) m.num: m};
-
-    // Vertikale senter per runde.
-    final centers = <List<double>>[];
-    centers.add([
-      for (var i = 0; i < 16; i++) _topPad + _cardH / 2 + i * (_cardH + _vGap)
-    ]);
-    for (var r = 1; r < _rounds.length; r++) {
-      final prev = centers[r - 1];
-      centers.add([
-        for (var k = 0; k < _rounds[r].length; k++)
-          (prev[2 * k] + prev[2 * k + 1]) / 2
-      ]);
-    }
-
-    final totalH = _topPad + 16 * (_cardH + _vGap) + 90;
-    final totalW = _colLeft(_rounds.length - 1) + _cardW + 40;
     final scheme = Theme.of(context).colorScheme;
 
+    final lc = _mkCenters(8); // venstre
+    final rc = _mkCenters(8); // høgre
+    final midY = lc[3][0]; // == rc[3][0]: midten der finalen står
+
+    final totalH = _topPad + 8 * (_cardH + _vGap) + 40;
+    final totalW = _colX(8) + _cardW + _leftPad;
+
     final cards = <Widget>[];
-    for (var r = 0; r < _rounds.length; r++) {
-      for (var k = 0; k < _rounds[r].length; k++) {
-        final km = byNum[_rounds[r][k]];
-        if (km == null) continue;
-        cards.add(Positioned(
-          left: _colLeft(r),
-          top: centers[r][k] - _cardH / 2,
-          child: _MatchCard(km: km, highlight: highlight),
-        ));
-      }
+    void place(int col, double centerY, KoMatch? km, {String? title}) {
+      if (km == null) return;
+      cards.add(Positioned(
+        left: _colX(col),
+        top: centerY - _cardH / 2 - (title != null ? _titleH : 0),
+        child: _MatchCard(km: km, highlight: highlight, title: title),
+      ));
     }
 
-    // Bronsefinale, plassert under finalen.
+    for (var r = 0; r < 4; r++) {
+      for (var k = 0; k < _leftRounds[r].length; k++) {
+        place(_leftCol(r), lc[r][k], byNum[_leftRounds[r][k]]);
+      }
+      for (var k = 0; k < _rightRounds[r].length; k++) {
+        place(_rightCol(r), rc[r][k], byNum[_rightRounds[r][k]]);
+      }
+    }
+    place(_finalCol, midY, byNum[_finalNum], title: '🏆 Finale');
+
+    // Bronsefinale rett under finalen, i midten.
     final third = byNum[_thirdNum];
     if (third != null) {
       cards.add(Positioned(
-        left: _colLeft(_rounds.length - 1),
-        top: _topPad + 16 * (_cardH + _vGap) + 16,
+        left: _colX(_finalCol),
+        top: midY + _cardH / 2 + 30,
         child: _MatchCard(km: third, highlight: highlight, title: '🥉 Bronsefinale'),
       ));
     }
 
-    // Rundetitlar.
-    final headers = <Widget>[
-      for (var r = 0; r < _rounds.length; r++)
-        Positioned(
-          left: _colLeft(r),
-          top: 10,
+    // Rundetitlar på begge sider + finale i midten.
+    Widget hdr(int col, String text) => Positioned(
+          left: _colX(col),
+          top: 12,
           width: _cardW,
-          child: Text(_roundTitles[r],
+          child: Text(text,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 13)),
-        ),
-    ];
-
-    // Halvdel-merker i venstre marg.
-    Widget halfLabel(int firstLeaf, String text, Color c) => Positioned(
-          left: 0,
-          top: centers[0][firstLeaf] - _cardH / 2,
-          width: _leftPad - 10,
-          height: 8 * (_cardH + _vGap),
-          child: Center(
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Text(text,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                      color: c)),
-            ),
-          ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         );
+    final headers = <Widget>[
+      for (var r = 0; r < 4; r++) ...[
+        hdr(_leftCol(r), _roundTitles[r]),
+        hdr(_rightCol(r), _roundTitles[r]),
+      ],
+      hdr(_finalCol, 'Finale'),
+    ];
 
     return Column(
       children: [
@@ -1150,9 +1155,10 @@ class BracketView extends StatelessWidget {
           color: scheme.surfaceContainerHighest,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: const Text(
-            'Laga er dine tippa gruppevinnarar/2-arar. Spania, Frankrike og '
-            'Argentina er utheva. Dra/scroll for å sjå heile treet — ekte lag '
-            'fyller inn etter kvart som kampane blir spelt.',
+            'Venstre og høgre halvdel møtest i finalen i midten. Laga er dine '
+            'tippa gruppeplasseringar — Spania, Frankrike og Argentina er '
+            'utheva. Dra/scroll for å sjå heile treet; ekte lag fyller inn '
+            'etter kvart som kampane blir spelt.',
             style: TextStyle(fontSize: 12),
           ),
         ),
@@ -1168,12 +1174,9 @@ class BracketView extends StatelessWidget {
                   children: [
                     Positioned.fill(
                       child: CustomPaint(
-                        painter: _ConnectorPainter(
-                            centers, scheme.outlineVariant),
+                        painter: _ConnectorPainter(lc, rc, midY, scheme.outlineVariant),
                       ),
                     ),
-                    halfLabel(0, 'ØVRE HALVDEL', scheme.primary),
-                    halfLabel(8, 'NEDRE HALVDEL', scheme.tertiary),
                     ...headers,
                     ...cards,
                   ],
@@ -1259,9 +1262,10 @@ class _MatchCard extends StatelessWidget {
 }
 
 class _ConnectorPainter extends CustomPainter {
-  final List<List<double>> centers;
+  final List<List<double>> lc, rc; // venstre/høgre senter per runde
+  final double midY;
   final Color color;
-  _ConnectorPainter(this.centers, this.color);
+  _ConnectorPainter(this.lc, this.rc, this.midY, this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1269,23 +1273,35 @@ class _ConnectorPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
-    for (var r = 1; r < _rounds.length; r++) {
-      final prevRight = _colLeft(r - 1) + _cardW;
-      final curLeft = _colLeft(r);
-      final midX = (prevRight + curLeft) / 2;
-      for (var k = 0; k < _rounds[r].length; k++) {
-        final yTop = centers[r - 1][2 * k];
-        final yBot = centers[r - 1][2 * k + 1];
-        final yCur = centers[r][k];
-        canvas.drawLine(Offset(prevRight, yTop), Offset(midX, yTop), paint);
-        canvas.drawLine(Offset(prevRight, yBot), Offset(midX, yBot), paint);
+
+    // Eit «merge»: to kort i ytre kolonne -> eitt i indre kolonne.
+    // [outerEdge] = kanten på ytre kort som vender innover,
+    // [innerEdge] = kanten på indre kort som vender utover.
+    void merge(double outerEdge, double innerEdge, List<double> outer,
+        List<double> inner) {
+      final midX = (outerEdge + innerEdge) / 2;
+      for (var k = 0; k < inner.length; k++) {
+        final yTop = outer[2 * k], yBot = outer[2 * k + 1], yCur = inner[k];
+        canvas.drawLine(Offset(outerEdge, yTop), Offset(midX, yTop), paint);
+        canvas.drawLine(Offset(outerEdge, yBot), Offset(midX, yBot), paint);
         canvas.drawLine(Offset(midX, yTop), Offset(midX, yBot), paint);
-        canvas.drawLine(Offset(midX, yCur), Offset(curLeft, yCur), paint);
+        canvas.drawLine(Offset(midX, yCur), Offset(innerEdge, yCur), paint);
       }
     }
+
+    for (var r = 1; r < 4; r++) {
+      // Venstre: ytre kolonne r-1 (høgrekant) -> indre kolonne r (venstrekant).
+      merge(_colX(r - 1) + _cardW, _colX(r), lc[r - 1], lc[r]);
+      // Høgre: ytre kolonne 8-(r-1) (venstrekant) -> indre 8-r (høgrekant).
+      merge(_colX(8 - (r - 1)), _colX(8 - r) + _cardW, rc[r - 1], rc[r]);
+    }
+
+    // Semifinalane inn til finalen i midten.
+    canvas.drawLine(Offset(_colX(3) + _cardW, midY), Offset(_colX(4), midY), paint);
+    canvas.drawLine(Offset(_colX(5), midY), Offset(_colX(4) + _cardW, midY), paint);
   }
 
   @override
   bool shouldRepaint(covariant _ConnectorPainter old) =>
-      old.centers != centers || old.color != color;
+      old.lc != lc || old.rc != rc || old.midY != midY || old.color != color;
 }
