@@ -40,8 +40,15 @@ const kThemes = <AppTheme>[
   AppTheme('Pride (lys)', Color(0xFF9C27B0), Brightness.light, rainbow: true),
 ];
 
+/// Standard-tema for nye besøkande: Pride natt (mørk regnboge).
+final int _defaultThemeIndex = () {
+  final i = kThemes
+      .indexWhere((t) => t.rainbow && t.brightness == Brightness.dark);
+  return i >= 0 ? i : 0;
+}();
+
 /// Vald tema-indeks, lytta på av heile appen og lagra lokalt.
-final themeIndex = ValueNotifier<int>(0);
+final themeIndex = ValueNotifier<int>(_defaultThemeIndex);
 const _themePrefKey = 'theme_index';
 
 Future<void> _loadTheme() async {
