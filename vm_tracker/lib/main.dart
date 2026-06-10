@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bracket.dart';
@@ -675,6 +676,11 @@ class _HomePageState extends State<HomePage> {
   String? _error;
   int _navIndex = 0;
 
+  // Mål-pling.
+  final AudioPlayer _player = AudioPlayer();
+  bool _soundOn = true;
+  static const _soundPrefKey = 'goal_sound';
+
   /// Namn på deltakarar som er skjult i visninga (lagra lokalt).
   Set<String> _hidden = {};
   static const _hiddenPrefKey = 'hidden_participants';
@@ -688,7 +694,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _liveTimer?.cancel();
+    _player.dispose();
     super.dispose();
+  }
+
+  /// Sann om nokon kamp har fått fleire mål enn sist (utløyser pling).
+  bool _goalScored(Map<int, LiveInfo> old, Map<int, LiveInfo> fresh) {
+    for (final e in fresh.entries) {
+      final n = old[e.key], f = e.value;
+      if (n == null || f.s1 == null || f.s2 == null) continue;
+      if (n.s1 == null || n.s2 == null) continue;
+      if ((f.s1! + f.s2!) > (n.s1! + n.s2!)) return true;
+    }
+    return false;
   }
 
   /// Hentar live-data og flettar ferdigspelte (post) gruppekampar inn som
@@ -696,6 +714,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _applyLive() async {
     if (_raw.isEmpty) return;
     final live = await fetchLive(_raw);
+    final scored = _goalScored(_live, live);
     final merged = [
       for (final m in _raw)
         (m.isGroup &&
@@ -711,6 +730,11 @@ class _HomePageState extends State<HomePage> {
       _live = live;
       _matches = merged;
     });
+    if (scored && _soundOn) {
+      try {
+        await _player.play(AssetSource('sounds/goal.wav'));
+      } catch (_) {}
+    }
   }
 
   Future<void> _load() async {
@@ -730,6 +754,7 @@ class _HomePageState extends State<HomePage> {
         _raw = matches;
         _matches = matches;
         _hidden = hidden;
+        _soundOn = prefs.getBool(_soundPrefKey) ?? true;
         _loading = false;
       });
       // Live-resultat: hent no, og oppdater kvart minutt.
@@ -896,6 +921,20 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
             ],
+          ),
+          IconButton(
+            tooltip: _soundOn ? 'Mål-pling på' : 'Mål-pling av',
+            onPressed: () async {
+              setState(() => _soundOn = !_soundOn);
+              final p = await SharedPreferences.getInstance();
+              await p.setBool(_soundPrefKey, _soundOn);
+              if (_soundOn) {
+                try {
+                  await _player.play(AssetSource('sounds/goal.wav'));
+                } catch (_) {}
+              }
+            },
+            icon: Icon(_soundOn ? Icons.volume_up : Icons.volume_off),
           ),
           IconButton(
             tooltip: 'Oppdater resultat',
@@ -1150,6 +1189,40 @@ String _sortKey(MatchInfo m) {
   return dt.toIso8601String();
 }
 
+/// Liten pulserande prikk – signaliserer at kampen framleis pågår.
+class _PulsingDot extends StatefulWidget {
+  final double size;
+  const _PulsingDot({this.size = 8});
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 750))
+    ..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween(begin: 1.0, end: 0.25).animate(_c),
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: const BoxDecoration(
+            color: Colors.red, shape: BoxShape.circle),
+      ),
+    );
+  }
+}
+
 class UpcomingMatchesView extends StatefulWidget {
   final List<MatchInfo> matches;
   final List<Participant> participants;
@@ -1315,15 +1388,12 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                margin: const EdgeInsets.only(right: 4),
-                decoration: const BoxDecoration(
-                    color: Colors.red, shape: BoxShape.circle),
+            children: const [
+              Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: _PulsingDot(size: 7),
               ),
-              const Text('LIVE',
+              Text('LIVE',
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
