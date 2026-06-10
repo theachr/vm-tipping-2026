@@ -26,6 +26,23 @@ class MatchInfo {
   bool get isGroup => group.startsWith('Group');
   bool get played => score1 != null && score2 != null;
 
+  MatchInfo copyWith({int? score1, int? score2}) => MatchInfo(
+        num: num,
+        round: round,
+        date: date,
+        time: time,
+        group: group,
+        ground: ground,
+        team1: team1,
+        team2: team2,
+        score1: score1 ?? this.score1,
+        score2: score2 ?? this.score2,
+        score1et: score1et,
+        score2et: score2et,
+        score1p: score1p,
+        score2p: score2p,
+      );
+
   /// 1 = team1 vinn, 2 = team2 vinn, 0 = uavgjort (berre gruppespel). null = ikkje spelt.
   int? get winnerSide {
     if (score1p != null && score2p != null) {

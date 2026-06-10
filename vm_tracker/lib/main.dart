@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bracket.dart';
 import 'data.dart';
 import 'flags.dart';
+import 'live.dart';
 import 'models.dart';
 import 'scoring.dart';
 
@@ -665,7 +667,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Participant> _participants = [];
   Overrides? _ovr;
-  List<MatchInfo> _matches = [];
+  List<MatchInfo> _raw = []; // openfootball (uendra)
+  List<MatchInfo> _matches = []; // med live sluttresultat fletta inn
+  Map<int, LiveInfo> _live = {};
+  Timer? _liveTimer;
   bool _loading = true;
   String? _error;
   int _navIndex = 0;
@@ -678,6 +683,34 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _liveTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Hentar live-data og flettar ferdigspelte (post) gruppekampar inn som
+  /// resultat, slik at tabellar, tre og poeng oppdaterer seg automatisk.
+  Future<void> _applyLive() async {
+    if (_raw.isEmpty) return;
+    final live = await fetchLive(_raw);
+    final merged = [
+      for (final m in _raw)
+        (m.isGroup &&
+                !m.played &&
+                live[m.num]?.finished == true &&
+                live[m.num]!.s1 != null &&
+                live[m.num]!.s2 != null)
+            ? m.copyWith(score1: live[m.num]!.s1, score2: live[m.num]!.s2)
+            : m
+    ];
+    if (!mounted) return;
+    setState(() {
+      _live = live;
+      _matches = merged;
+    });
   }
 
   Future<void> _load() async {
@@ -694,10 +727,16 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _participants = participants;
         _ovr = ovr;
+        _raw = matches;
         _matches = matches;
         _hidden = hidden;
         _loading = false;
       });
+      // Live-resultat: hent no, og oppdater kvart minutt.
+      await _applyLive();
+      _liveTimer?.cancel();
+      _liveTimer =
+          Timer.periodic(const Duration(seconds: 60), (_) => _applyLive());
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -876,6 +915,7 @@ class _HomePageState extends State<HomePage> {
                           matches: _matches,
                           participants: _visible,
                           overrides: _ovr!,
+                          live: _live,
                         )
                       : KnockoutView(matches: _matches, overrides: _ovr!);
 
@@ -1114,11 +1154,13 @@ class UpcomingMatchesView extends StatefulWidget {
   final List<MatchInfo> matches;
   final List<Participant> participants;
   final Overrides overrides;
+  final Map<int, LiveInfo> live;
   const UpcomingMatchesView({
     super.key,
     required this.matches,
     required this.participants,
     required this.overrides,
+    this.live = const {},
   });
 
   @override
@@ -1263,8 +1305,40 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         if (p.forMatch(m.team1, m.team2) != null) p
     ];
 
+    final li = widget.live[m.num];
     Widget trailing;
-    if (act != null) {
+    if (li != null && li.inPlay) {
+      // Live: raud LIVE-merke + stilling + spelt-minutt.
+      trailing = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: const BoxDecoration(
+                    color: Colors.red, shape: BoxShape.circle),
+              ),
+              const Text('LIVE',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red)),
+            ],
+          ),
+          Text('${li.s1 ?? 0}–${li.s2 ?? 0}',
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+          if (li.detail.isNotEmpty)
+            Text(li.detail,
+                style: const TextStyle(fontSize: 9, color: Colors.red)),
+        ],
+      );
+    } else if (act != null) {
       trailing = Text('${act[0]}–${act[1]}',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
     } else {
