@@ -631,6 +631,29 @@ int matchPointsFor(Participant p, MatchInfo m, Overrides ovr) {
   );
 }
 
+/// Midlertidige poeng ut frå live-stillinga (kampen pågår), eller null om
+/// kampen ikkje er live eller deltakaren ikkje har tippa han.
+int? liveTempPointsFor(Participant p, MatchInfo m, LiveInfo? li) {
+  if (li == null || !li.inPlay || li.s1 == null || li.s2 == null) return null;
+  final pred = p.forMatch(m.team1, m.team2);
+  if (pred == null) return null;
+  return matchPoints(
+    pred1: pred[m.team1]!,
+    pred2: pred[m.team2]!,
+    act1: li.s1!,
+    act2: li.s2!,
+  );
+}
+
+/// Sum av midlertidige poeng over alle live-kampar for ein deltakar.
+int liveTempTotal(Participant p, List<MatchInfo> matches, Map<int, LiveInfo> live) {
+  var sum = 0;
+  for (final m in matches) {
+    sum += liveTempPointsFor(p, m, live[m.num]) ?? 0;
+  }
+  return sum;
+}
+
 class Standing {
   final Participant p;
   final int group, medal, played;
@@ -1080,6 +1103,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _standingTile(Standing s, int rank) {
+    final temp = liveTempTotal(s.p, _matches, _live);
     final medalColor = switch (rank) {
       1 => const Color(0xFFFFC107),
       2 => const Color(0xFFB0BEC5),
@@ -1099,6 +1123,30 @@ class _HomePageState extends State<HomePage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (temp > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _PulsingDot(size: 6),
+                    const SizedBox(width: 4),
+                    Text('+$temp',
+                        style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
           Text('${s.total}',
               style: const TextStyle(
                   fontSize: 22, fontWeight: FontWeight.bold)),
@@ -1484,9 +1532,12 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     final scheme = Theme.of(context).colorScheme;
     final pred = p.forMatch(m.team1, m.team2)!;
     final tip = '${pred[m.team1]}–${pred[m.team2]}';
+    final tempPts = liveTempPointsFor(p, m, widget.live[m.num]);
 
     Color? bg;
     String? badge;
+    Color badgeColor = scheme.outline;
+    bool temp = false;
     if (act != null) {
       final pts = matchPointsFor(p, m, widget.overrides);
       if (pts == 3) {
@@ -1497,6 +1548,16 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         badge = '1p';
       } else {
         badge = '0p';
+      }
+    } else if (tempPts != null) {
+      // Live: midlertidige poeng ut frå stillinga akkurat no.
+      temp = true;
+      badge = 'temp $tempPts' 'p';
+      badgeColor = Colors.red;
+      if (tempPts == 3) {
+        bg = Colors.green.withValues(alpha: 0.10);
+      } else if (tempPts == 1) {
+        bg = Colors.amber.withValues(alpha: 0.10);
       }
     }
 
@@ -1513,10 +1574,14 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
           Text(tip, style: const TextStyle(fontWeight: FontWeight.w600)),
           if (badge != null) ...[
             const SizedBox(width: 8),
+            if (temp) ...[
+              const _PulsingDot(size: 6),
+              const SizedBox(width: 4),
+            ],
             Text(badge,
                 style: TextStyle(
                     fontSize: 12,
-                    color: scheme.outline,
+                    color: badgeColor,
                     fontWeight: FontWeight.bold)),
           ],
         ],
