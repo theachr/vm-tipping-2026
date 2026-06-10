@@ -899,10 +899,19 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
+    // Sorter på reelle poeng + live «temp»-poeng, så tavla flyttar seg
+    // medan kampane går. Tiebreak: reell total, så namn.
+    int effective(Standing s) =>
+        s.total + liveTempTotal(s.p, _matches, _live);
     final standings = _visible
         .map((p) => standingFor(p, _matches, _ovr!))
         .toList()
-      ..sort((a, b) => b.total.compareTo(a.total));
+      ..sort((a, b) {
+        final c = effective(b).compareTo(effective(a));
+        if (c != 0) return c;
+        final t = b.total.compareTo(a.total);
+        return t != 0 ? t : a.p.name.compareTo(b.p.name);
+      });
 
     return Scaffold(
       appBar: AppBar(
