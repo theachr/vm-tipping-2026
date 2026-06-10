@@ -19,8 +19,12 @@ class AppTheme {
 
   /// Viser regnboge-gradient på toppbanneret (Pride-tema).
   final bool rainbow;
+
+  /// Brutalistisk stil: skarpe hjørne, tjukke svarte kantar, ingen skuggar,
+  /// monospace-font, papirkvit bakgrunn med ein hard aksentfarge.
+  final bool brutalist;
   const AppTheme(this.name, this.seed, this.brightness,
-      {this.rainbow = false});
+      {this.rainbow = false, this.brutalist = false});
 }
 
 /// Klassisk Pride-regnboge (6 striper).
@@ -41,7 +45,100 @@ const kThemes = <AppTheme>[
   AppTheme('Pride natt', Color(0xFF9C27B0), Brightness.dark, rainbow: true),
   AppTheme('Rosa (lys)', Color(0xFFE91E8C), Brightness.light),
   AppTheme('Pride (lys)', Color(0xFF9C27B0), Brightness.light, rainbow: true),
+  AppTheme('Brutalistisk', Color(0xFFFFD400), Brightness.light, brutalist: true),
 ];
+
+/// Byggjer ThemeData for eit tema. Brutalist får ein heilt eigen, hard stil.
+ThemeData buildAppTheme(AppTheme t) {
+  if (!t.brutalist) {
+    return ThemeData(
+      colorScheme:
+          ColorScheme.fromSeed(seedColor: t.seed, brightness: t.brightness),
+      useMaterial3: true,
+    );
+  }
+  const ink = Color(0xFF111111);
+  const paper = Color(0xFFF4F1E8);
+  const mono = 'monospace';
+  const fallback = ['Menlo', 'Consolas', 'Courier New', 'monospace'];
+  final scheme = ColorScheme.fromSeed(
+    seedColor: t.seed,
+    brightness: Brightness.light,
+  ).copyWith(
+    surface: paper,
+    onSurface: ink,
+    primary: ink,
+    onPrimary: Colors.white,
+    secondary: t.seed,
+    onSecondary: ink,
+    secondaryContainer: t.seed,
+    onSecondaryContainer: ink,
+    primaryContainer: t.seed,
+    onPrimaryContainer: ink,
+    outline: ink,
+    surfaceContainerHighest: const Color(0xFFE7E2D4),
+  );
+  const sharp = RoundedRectangleBorder(
+    side: BorderSide(color: ink, width: 2),
+    borderRadius: BorderRadius.zero,
+  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: paper,
+    fontFamily: mono,
+    fontFamilyFallback: fallback,
+    dividerTheme: const DividerThemeData(color: ink, thickness: 2, space: 12),
+    cardTheme: const CardThemeData(
+      elevation: 0,
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      shape: sharp,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: paper,
+      foregroundColor: ink,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: TextStyle(
+        color: ink,
+        fontFamily: mono,
+        fontFamilyFallback: fallback,
+        fontWeight: FontWeight.bold,
+        fontSize: 20,
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        shape: sharp,
+        backgroundColor: ink,
+        foregroundColor: Colors.white,
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: sharp,
+        side: const BorderSide(color: ink, width: 2),
+        foregroundColor: ink,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(shape: sharp, foregroundColor: ink),
+    ),
+    segmentedButtonTheme: const SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: WidgetStatePropertyAll(sharp),
+      ),
+    ),
+    chipTheme: const ChipThemeData(
+      shape: sharp,
+      side: BorderSide(color: ink, width: 2),
+    ),
+    dialogTheme: const DialogThemeData(shape: sharp),
+    listTileTheme: const ListTileThemeData(iconColor: ink, textColor: ink),
+  );
+}
 
 /// Standard-tema for nye besøkande: Pride natt (mørk regnboge).
 final int _defaultThemeIndex = () {
@@ -75,14 +172,10 @@ class VmTippingApp extends StatelessWidget {
       valueListenable: themeIndex,
       builder: (context, idx, _) {
         final t = kThemes[idx];
-        final scheme = ColorScheme.fromSeed(
-          seedColor: t.seed,
-          brightness: t.brightness,
-        );
         return MaterialApp(
           title: 'VM Tipping 2026',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(colorScheme: scheme, useMaterial3: true),
+          theme: buildAppTheme(t),
           home: const HomePage(),
         );
       },
