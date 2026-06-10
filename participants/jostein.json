@@ -1,0 +1,298 @@
+{
+  "name": "Jostein",
+  "tips": {
+    "1": {
+      "kamp": "Mexico – Sør-Afrika",
+      "score": "2-0"
+    },
+    "2": {
+      "kamp": "Sør-Korea – Tsjekkia",
+      "score": "1-1"
+    },
+    "3": {
+      "kamp": "Canada – Bosnia-Hercegovina",
+      "score": "2-1"
+    },
+    "4": {
+      "kamp": "USA – Paraguay",
+      "score": "2-0"
+    },
+    "5": {
+      "kamp": "Qatar – Sveits",
+      "score": "1-3"
+    },
+    "6": {
+      "kamp": "Brasil – Marokko",
+      "score": "3-3"
+    },
+    "7": {
+      "kamp": "Haiti – Skottland",
+      "score": "0-1"
+    },
+    "8": {
+      "kamp": "Australia – Tyrkia",
+      "score": "4-4"
+    },
+    "9": {
+      "kamp": "Tyskland – Curaçao",
+      "score": "4-0"
+    },
+    "10": {
+      "kamp": "Nederland – Japan",
+      "score": "2-0"
+    },
+    "11": {
+      "kamp": "Elfenbenskysten – Ecuador",
+      "score": "1-1"
+    },
+    "12": {
+      "kamp": "Sverige – Tunisia",
+      "score": "0-0"
+    },
+    "13": {
+      "kamp": "Spania – Kapp Verde",
+      "score": "4-0"
+    },
+    "14": {
+      "kamp": "Belgia – Egypt",
+      "score": "2-1"
+    },
+    "15": {
+      "kamp": "Saudi Arabia – Uruguay",
+      "score": "0-2"
+    },
+    "16": {
+      "kamp": "Iran – New Zealand",
+      "score": "1-1"
+    },
+    "17": {
+      "kamp": "Frankrike – Senegal",
+      "score": "1-1"
+    },
+    "18": {
+      "kamp": "Irak – Norge",
+      "score": "0-2"
+    },
+    "19": {
+      "kamp": "Argentina – Algerie",
+      "score": "3-1"
+    },
+    "20": {
+      "kamp": "Østerrike – Jordan",
+      "score": "1-0"
+    },
+    "21": {
+      "kamp": "Portugal – DR Kongo",
+      "score": "3-0"
+    },
+    "22": {
+      "kamp": "England – Kroatia",
+      "score": "1-0"
+    },
+    "23": {
+      "kamp": "Ghana – Panama",
+      "score": "2-0"
+    },
+    "24": {
+      "kamp": "Usbekistan – Colombia",
+      "score": "0-1"
+    },
+    "25": {
+      "kamp": "Tsjekkia – Sør-Afrika",
+      "score": "1-0"
+    },
+    "26": {
+      "kamp": "Sveits – Bosnia-Hercegovina",
+      "score": "1-1"
+    },
+    "27": {
+      "kamp": "Canada – Qatar",
+      "score": "3-0"
+    },
+    "28": {
+      "kamp": "Mexico – Sør-Korea",
+      "score": "2-0"
+    },
+    "29": {
+      "kamp": "USA – Australia",
+      "score": "2-1"
+    },
+    "30": {
+      "kamp": "Skottland – Marokko",
+      "score": "0-2"
+    },
+    "31": {
+      "kamp": "Brasil – Haiti",
+      "score": "4-0"
+    },
+    "32": {
+      "kamp": "Tyrkia – Paraguay",
+      "score": "2-0"
+    },
+    "33": {
+      "kamp": "Nederland – Sverige",
+      "score": "3-0"
+    },
+    "34": {
+      "kamp": "Tyskland – Elfenbenskysten",
+      "score": "2-0"
+    },
+    "35": {
+      "kamp": "Ecuador – Curaçao",
+      "score": "2-1"
+    },
+    "36": {
+      "kamp": "Tunisia – Japan",
+      "score": "1-1"
+    },
+    "37": {
+      "kamp": "Spania – Saudi Arabia",
+      "score": "3-0"
+    },
+    "38": {
+      "kamp": "Belgia – Iran",
+      "score": "2-1"
+    },
+    "39": {
+      "kamp": "Uruguay – Kapp Verde",
+      "score": "1-0"
+    },
+    "40": {
+      "kamp": "New Zealand – Egypt",
+      "score": "0-0"
+    },
+    "41": {
+      "kamp": "Argentina – Østerrike",
+      "score": "1-1"
+    },
+    "42": {
+      "kamp": "Frankrike – Irak",
+      "score": "4-1"
+    },
+    "43": {
+      "kamp": "Norge – Senegal",
+      "score": "1-2"
+    },
+    "44": {
+      "kamp": "Jordan – Algerie",
+      "score": "0-0"
+    },
+    "45": {
+      "kamp": "Portugal – Usbekistan",
+      "score": "3-1"
+    },
+    "46": {
+      "kamp": "England – Ghana",
+      "score": "1-0"
+    },
+    "47": {
+      "kamp": "Panama – Kroatia",
+      "score": "0-0"
+    },
+    "48": {
+      "kamp": "Colombia – DR Kongo",
+      "score": "2-0"
+    },
+    "49": {
+      "kamp": "Sveits – Canada",
+      "score": "1-2"
+    },
+    "50": {
+      "kamp": "Bosnia-Hercegovina – Qatar",
+      "score": "0-0"
+    },
+    "51": {
+      "kamp": "Skottland – Brasil",
+      "score": "2-0"
+    },
+    "52": {
+      "kamp": "Marokko – Haiti",
+      "score": "4-0"
+    },
+    "53": {
+      "kamp": "Mexico – Tsjekkia",
+      "score": "2-2"
+    },
+    "54": {
+      "kamp": "Sør-Afrika – Sør-Korea",
+      "score": "1-2"
+    },
+    "55": {
+      "kamp": "Curaçao – Elfenbenskysten",
+      "score": "0-2"
+    },
+    "56": {
+      "kamp": "Ecuador – Tyskland",
+      "score": "0-3"
+    },
+    "57": {
+      "kamp": "Tunisia – Nederland",
+      "score": "0-2"
+    },
+    "58": {
+      "kamp": "Japan – Sverige",
+      "score": "2-1"
+    },
+    "59": {
+      "kamp": "Tyrkia – USA",
+      "score": "1-1"
+    },
+    "60": {
+      "kamp": "Paraguay – Australia",
+      "score": "0-2"
+    },
+    "61": {
+      "kamp": "Norge – Frankrike",
+      "score": "0-2"
+    },
+    "62": {
+      "kamp": "Senegal – Irak",
+      "score": "2-1"
+    },
+    "63": {
+      "kamp": "Kapp Verde – Saudi Arabia",
+      "score": "2-3"
+    },
+    "64": {
+      "kamp": "Uruguay – Spania",
+      "score": "1-1"
+    },
+    "65": {
+      "kamp": "Egypt – Iran",
+      "score": "1-2"
+    },
+    "66": {
+      "kamp": "New Zealand – Belgia",
+      "score": "1-1"
+    },
+    "67": {
+      "kamp": "Panama – England",
+      "score": "0-1"
+    },
+    "68": {
+      "kamp": "Kroatia – Ghana",
+      "score": "0-0"
+    },
+    "69": {
+      "kamp": "Colombia – Portugal",
+      "score": "0-2"
+    },
+    "70": {
+      "kamp": "DR Kongo – Usbekistan",
+      "score": "0-2"
+    },
+    "71": {
+      "kamp": "Algerie – Østerrike",
+      "score": "1-1"
+    },
+    "72": {
+      "kamp": "Jordan – Argentina",
+      "score": "0-2"
+    }
+  },
+  "medaljer": {
+    "gull": "Spania",
+    "solv": "Frankrike",
+    "bronse": "Marokko"
+  }
+}
