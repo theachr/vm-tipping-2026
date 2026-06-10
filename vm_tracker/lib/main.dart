@@ -23,8 +23,11 @@ class AppTheme {
   /// Brutalistisk stil: skarpe hjørne, tjukke svarte kantar, ingen skuggar,
   /// monospace-font, papirkvit bakgrunn med ein hard aksentfarge.
   final bool brutalist;
+
+  /// Skalering av all tekst (1.0 = normal, 2.0 = dobbel).
+  final double textScale;
   const AppTheme(this.name, this.seed, this.brightness,
-      {this.rainbow = false, this.brutalist = false});
+      {this.rainbow = false, this.brutalist = false, this.textScale = 1.0});
 }
 
 /// Klassisk Pride-regnboge (6 striper).
@@ -46,6 +49,8 @@ const kThemes = <AppTheme>[
   AppTheme('Rosa (lys)', Color(0xFFE91E8C), Brightness.light),
   AppTheme('Pride (lys)', Color(0xFF9C27B0), Brightness.light, rainbow: true),
   AppTheme('Brutalistisk', Color(0xFFFFD400), Brightness.light, brutalist: true),
+  AppTheme('Brutalistisk BIG', Color(0xFFFFD400), Brightness.light,
+      brutalist: true, textScale: 2.0),
 ];
 
 /// Byggjer ThemeData for eit tema. Brutalist får ein heilt eigen, hard stil.
@@ -176,6 +181,14 @@ class VmTippingApp extends StatelessWidget {
           title: 'VM Tipping 2026',
           debugShowCheckedModeBanner: false,
           theme: buildAppTheme(t),
+          builder: (context, child) {
+            if (t.textScale == 1.0 || child == null) return child ?? const SizedBox();
+            final mq = MediaQuery.of(context);
+            return MediaQuery(
+              data: mq.copyWith(textScaler: TextScaler.linear(t.textScale)),
+              child: child,
+            );
+          },
           home: const HomePage(),
         );
       },
