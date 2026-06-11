@@ -54,9 +54,13 @@ def build_participant(src, official, errors):
             errors.append(f"{name} rad {row}: {ea} vs {eb} finst IKKJE i offisielle gruppekampar")
         out_preds.append({"teams": sorted([ea, eb]), "goals": {ea: ga, eb: gb}})
     m = src["medaljer"]
+    # Tolerer blanke medaljar (deltakar som ikkje har fylt ut gull/sølv/bronse).
+    def en_opt(name):
+        name = (name or "").strip()
+        return en(name) if name else ""
     return {
         "name": name,
-        "medals": {"gold": en(m["gull"]), "silver": en(m["solv"]), "bronze": en(m["bronse"])},
+        "medals": {"gold": en_opt(m["gull"]), "silver": en_opt(m["solv"]), "bronze": en_opt(m["bronse"])},
         "predictions": out_preds,
     }
 
