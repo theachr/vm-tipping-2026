@@ -1,6 +1,6 @@
 // Poenglogikk for tippekupongen.
-// Reglar: riktig resultat = 3, riktig vinnar (feil siffer) = 1, elles 0.
-// Medaljar: riktig lag + plassering = 3, riktig lag men feil plassering = 1.
+// Reglar: riktig resultat = 3, riktig vinner (feil siffer) = 1, elles 0.
+// Medaljer: riktig lag + plassering = 3, riktig lag men feil plassering = 1.
 
 int _sign(int a, int b) => a == b ? 0 : (a > b ? 1 : -1);
 
@@ -16,8 +16,8 @@ int matchPoints({
   return 0;
 }
 
-/// Poeng for medaljar. picks/actual har nøklane 'gold','silver','bronze'.
-/// actual-verdiar kan vere null før sluttspelet er avgjort.
+/// Poeng for medaljer. picks/actual har nøklane 'gold','silver','bronze'.
+/// actual-verdiar kan vere null før sluttspillet er avgjort.
 int medalPoints(Map<String, String> picks, Map<String, String?> actual) {
   final actualMedalists =
       actual.values.whereType<String>().toSet();

@@ -1,20 +1,20 @@
-// Løyser sluttspeltreet: koplar openfootball sine plassholdarar (1H, 2J,
-// 3A/B/C/D/F, W74, L101) til faktiske lag når dei finst, elles til Thea sine
-// predikerte gruppevinnarar/2-arar/3-arar (projeksjon før gruppespelet er ferdig).
+// Løyser sluttspilltreet: koplar openfootball sine plassholdarar (1H, 2J,
+// 3A/B/C/D/F, W74, L101) til faktiske lag når de finst, elles til Thea sine
+// predikerte gruppevinnerar/2-arar/3-arar (projeksjon før gruppespillet er ferdig).
 //
-// Tredjeplass-plassane følgjer FIFA sitt offisielle oppsett: kvar plass (t.d.
-// "3A/B/C/D/F") kan berre få ein 3.plass frå dei oppgjevne gruppene. Av dei 12
-// gruppetrearanane går dei 8 beste vidare (rangert på poeng, målforskjell, mål),
-// og dei vert fordelte på plassane med ei tildeling som respekterer kva grupper
-// kvar plass har lov å ta imot.
+// Tredjeplass-plassene følger FIFA sitt offisielle oppsett: hver plass (f.eks.
+// "3A/B/C/D/F") kan bare få en 3.plass fra de oppgjevne gruppene. Av de 12
+// gruppetrearanane går de 8 beste videre (rangert på poeng, målforskjell, mål),
+// og de blir fordelte på plassene med ei tildeling som respekterer hva grupper
+// hver plass har lov å ta imot.
 import 'data.dart';
 import 'models.dart';
 
-/// Eitt lag i ein sluttspelkamp.
+/// Eitt lag i en sluttspillkamp.
 class KoTeam {
-  final String? team; // engelsk lagnamn, eller null om uavklart
+  final String? team; // engelsk lagnavn, eller null om uavklart
   final String label; // det som skal visast
-  final bool projected; // true = tippa gruppeplassering (ikkje spelt enno)
+  final bool projected; // true = tippet gruppeplassering (ikke spilt ennå)
   const KoTeam(this.team, this.label, {this.projected = false});
   bool get resolved => team != null;
 }
@@ -26,7 +26,7 @@ class KoMatch {
   const KoMatch(this.num, this.round, this.home, this.away);
 }
 
-/// Ei rad i ein gruppetabell (med statistikk for rangering).
+/// Ei rad i en gruppetabell (med statistikk for rangering).
 class _GroupRow {
   final String team;
   final int pts, gf, ga;
@@ -34,11 +34,11 @@ class _GroupRow {
   int get gd => gf - ga;
 }
 
-/// Ein resultatkjelde for ein gruppekamp: returnerer {team1: mål, team2: mål}
-/// eller null om kampen ikkje har eit (tippa eller spelt) resultat enno.
+/// En resultatkjelde for en gruppekamp: returnerer {team1: mål, team2: mål}
+/// eller null om kampen ikke har et (tippet eller spilt) resultat ennå.
 typedef ScoreFor = Map<String, int>? Function(MatchInfo m);
 
-/// Rik gruppetabell ut frå ei resultatkjelde (tippingar eller faktiske resultat).
+/// Rik gruppetabell ut fra ei resultatkjelde (tippingar eller faktiske resultat).
 /// "Group X" -> rangerte rader (1.,2.,3.,4.).
 Map<String, List<_GroupRow>> _richStandings(
     ScoreFor scoreFor, List<MatchInfo> matches,
@@ -49,9 +49,9 @@ Map<String, List<_GroupRow>> _richStandings(
   }
   final out = <String, List<_GroupRow>>{};
   groups.forEach((g, ms) {
-    // I "Resultat"-modus tek vi berre med grupper som er heilt ferdigspelte,
-    // slik at uavgjorde plassar viser plassholdaren (t.d. "1A") i staden for ei
-    // tilfeldig (alfabetisk) gjetting på ein 0-0-0-tabell.
+    // I "Resultat"-modus tar vi bare med grupper som er heilt ferdigspilt,
+    // slik at uavgjorte plasser viser plassholdaren (f.eks. "1A") i staden for ei
+    // tilfeldig (alfabetisk) gjetting på en 0-0-0-tabell.
     if (requireComplete && ms.any((m) => scoreFor(m) == null)) return;
     final pts = <String, int>{};
     final gf = <String, int>{};
@@ -95,7 +95,7 @@ Map<String, List<_GroupRow>> _richStandings(
   return out;
 }
 
-/// Rangering: poeng, så målforskjell, så mål, så namn (stabilt).
+/// Rangering: poeng, så målforskjell, så mål, så navn (stabilt).
 int _cmpStanding(_GroupRow a, _GroupRow b) {
   final c1 = b.pts.compareTo(a.pts);
   if (c1 != 0) return c1;
@@ -106,16 +106,16 @@ int _cmpStanding(_GroupRow a, _GroupRow b) {
   return a.team.compareTo(b.team);
 }
 
-/// Gruppetabell ut frå ein deltakar sine tippa resultat.
-/// Returnerer kart: "Group X" -> rangerte lagnamn (1.,2.,3.,4.).
+/// Gruppetabell ut fra en deltaker sine tippet resultat.
+/// Returnerer kart: "Group X" -> rangerte lagnavn (1.,2.,3.,4.).
 Map<String, List<String>> predictedStandings(
     Participant p, List<MatchInfo> matches) {
   return _richStandings((m) => p.forMatch(m.team1, m.team2), matches)
       .map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
 }
 
-/// Gruppetabellar (rangerte lagnamn) ut frå ei vilkårleg resultatkjelde.
-/// Med [requireComplete] vert berre ferdigspelte grupper tekne med.
+/// Gruppetabeller (rangerte lagnavn) ut fra ei vilkårleg resultatkjelde.
+/// Med [requireComplete] blir bare ferdigspilt grupper tekne med.
 Map<String, List<String>> standingsFromScore(
     ScoreFor scoreFor, List<MatchInfo> matches,
     {bool requireComplete = false}) {
@@ -123,21 +123,21 @@ Map<String, List<String>> standingsFromScore(
       .map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
 }
 
-/// Korleis eit lag går vidare frå gruppa.
+/// Korleis et lag går videre fra gruppa.
 enum Advance {
-  direct, // 1. eller 2.plass – direkte vidare
-  thirdIn, // 3.plass blant dei 8 beste – vidare
-  thirdOut, // 3.plass, men ikkje blant dei 8 beste – ute
+  direct, // 1. eller 2.plass – direkte videre
+  thirdIn, // 3.plass blant de 8 beste – videre
+  thirdOut, // 3.plass, men ikke blant de 8 beste – ute
   out, // 4.plass – ute
 }
 
-/// Ei visningsklar rad i ein gruppetabell.
+/// Ei visningsklar rad i en gruppetabell.
 class TeamStanding {
   final int rank; // 1..4
   final String team;
   final int pts, gf, ga;
   final Advance advance;
-  final int? thirdRank; // plassering (1..12) blant 3.plassane, berre for 3.plass
+  final int? thirdRank; // plassering (1..12) blant 3.plassene, bare for 3.plass
   const TeamStanding({
     required this.rank,
     required this.team,
@@ -150,14 +150,14 @@ class TeamStanding {
   int get gd => gf - ga;
 }
 
-/// Fulle gruppetabellar med rangering og vidare-status (inkl. beste 8 av
-/// 3.plassane). "Group X" -> rader sortert 1.,2.,3.,4.
+/// Fulle gruppetabeller med rangering og videre-status (inkl. beste 8 av
+/// 3.plassene). "Group X" -> rader sortert 1.,2.,3.,4.
 Map<String, List<TeamStanding>> groupTables(
     ScoreFor scoreFor, List<MatchInfo> matches,
     {bool requireComplete = false}) {
   final rich =
       _richStandings(scoreFor, matches, requireComplete: requireComplete);
-  // Rangér alle 3.plassane og finn dei 8 beste.
+  // Rangér alle 3.plassene og finn de 8 beste.
   final thirds = <_GroupRow>[];
   rich.forEach((g, rows) {
     if (rows.length >= 3) thirds.add(rows[2]);
@@ -195,21 +195,21 @@ Map<String, List<TeamStanding>> groupTables(
 final _slotRe = RegExp(r'^([12])([A-L])$');
 final _wlRe = RegExp(r'^([WL])(\d+)$');
 
-// ---- Scenario-veljar: "kven møter laget i sluttspelet" ---------------------
+// ---- Scenario-veljar: "hvem møter laget i sluttspillet" ---------------------
 
-/// Eitt steg på vegen gjennom sluttspelet.
+/// Eitt steg på vegen gjennom sluttspillet.
 class ScenarioStep {
-  final String round; // lesbar runde, t.d. "16-delsfinale"
+  final String round; // lesbar runde, f.eks. "16-delsfinale"
   final int matchNum;
   final String opponent; // lesbar motstandar-skildring
   const ScenarioStep(this.round, this.matchNum, this.opponent);
 }
 
-/// Resultatet av eit scenario.
+/// Resultatet av et scenario.
 class Scenario {
-  final String slotLabel; // t.d. "vinnar av gruppe I"
+  final String slotLabel; // f.eks. "vinner av gruppe I"
   final List<ScenarioStep> steps;
-  final String? note; // forklaring (t.d. for 3.plass)
+  final String? note; // forklaring (f.eks. for 3.plass)
   const Scenario(this.slotLabel, this.steps, {this.note});
 }
 
@@ -232,19 +232,19 @@ String _roundNo(String r) {
   }
 }
 
-/// Gjer ein plassholdarkode lesbar. [expand] viser dei to laga i ein W/L-kamp.
+/// Gjer en plassholdarkode lesbar. [expand] viser de to laga i en W/L-kamp.
 String _describeCode(String code, Map<int, MatchInfo> byNum,
     {bool expand = true}) {
   final s = _slotRe.firstMatch(code);
   if (s != null) {
-    return s[1] == '1' ? 'vinnar av gruppe ${s[2]}' : '2.-plass i gruppe ${s[2]}';
+    return s[1] == '1' ? 'vinner av gruppe ${s[2]}' : '2.-plass i gruppe ${s[2]}';
   }
   final third = _thirdGroups(code);
-  if (third != null) return '3.-plass (ein av ${third.join('/')})';
+  if (third != null) return '3.-plass (en av ${third.join('/')})';
   final wl = _wlRe.firstMatch(code);
   if (wl != null) {
     final n = int.parse(wl[2]!);
-    final verb = wl[1] == 'W' ? 'vinnaren' : 'taparen';
+    final verb = wl[1] == 'W' ? 'vinneren' : 'taperen';
     final fm = byNum[n];
     if (expand && fm != null) {
       final a = _describeCode(fm.team1, byNum, expand: false);
@@ -256,9 +256,9 @@ String _describeCode(String code, Map<int, MatchInfo> byNum,
   return code;
 }
 
-/// Reknar ut kven eit lag møter runde for runde i sluttspelet dersom det
-/// kjem vidare som [placement] (1, 2 eller 3) frå gruppe [group].
-/// Følgjer vinnar-vegen heilt til finalen (føreset at laget held fram).
+/// Reknar ut hvem et lag møter runde for runde i sluttspillet dersom det
+/// kjem videre som [placement] (1, 2 eller 3) fra gruppe [group].
+/// Følgjer vinner-vegen heilt til finalen (føreset at laget går videre).
 Scenario scenarioPath({
   required List<MatchInfo> matches,
   required String group, // 'I'
@@ -267,7 +267,7 @@ Scenario scenarioPath({
   final ko = matches.where((m) => !m.isGroup).toList()
     ..sort((a, b) => a.num.compareTo(b.num));
   final byNum = {for (final m in ko) m.num: m};
-  // nextOf[n] = kampen vinnaren av kamp n går vidare til.
+  // nextOf[n] = kampen vinneren av kamp n går videre til.
   final nextOf = <int, int>{};
   for (final m in ko) {
     for (final c in [m.team1, m.team2]) {
@@ -289,8 +289,8 @@ Scenario scenarioPath({
       }
     }
     return Scenario('3.-plass i gruppe $group', steps,
-        note: 'Kvar ein 3.-plass hamnar avheng av kva andre 3.-plassar som '
-            'går vidare. Dette er dei moglege opningskampane.');
+        note: 'Hvor hver 3.-plass havner avhenger av hvilke andre 3.-plasser som '
+            'går videre. Dette er de mulige åpningskampene.');
   }
 
   final startCode = '$placement$group';
@@ -302,7 +302,7 @@ Scenario scenarioPath({
     }
   }
   final slotLabel =
-      placement == 1 ? 'vinnar av gruppe $group' : '2.-plass i gruppe $group';
+      placement == 1 ? 'vinner av gruppe $group' : '2.-plass i gruppe $group';
   if (start == null) return Scenario(slotLabel, const []);
 
   final steps = <ScenarioStep>[];
@@ -320,8 +320,8 @@ Scenario scenarioPath({
   return Scenario(slotLabel, steps);
 }
 
-/// Parsar ein 3.plass-kode som "3A/B/C/D/F" til gruppebokstavane den kan ta imot.
-/// Returnerer null om koden ikkje er ein 3.plass-plass.
+/// Parsar en 3.plass-kode som "3A/B/C/D/F" til gruppebokstavane den kan ta imot.
+/// Returnerer null om koden ikke er en 3.plass-plass.
 List<String>? _thirdGroups(String code) {
   if (!code.startsWith('3') || code.length < 2) return null;
   final parts = code.substring(1).split('/');
@@ -334,7 +334,7 @@ bool _isGroupLetter(String s) {
   return c >= 65 && c <= 76; // A..L
 }
 
-/// Bipartitt maksmatching (Kuhn): tildeler kvar plass éi tillaten gruppe.
+/// Bipartitt maksmatching (Kuhn): tildeler hver plass éi tillaten gruppe.
 /// [slotAllowed][s] = liste over gruppeindeksar plassen kan ta imot (0=A..11=L).
 /// Returnerer slotToGroup: gruppeindeks per plass, eller null om uavklart.
 List<int?> _matchSlots(List<List<int>> slotAllowed, int numGroups) {
@@ -360,14 +360,14 @@ List<int?> _matchSlots(List<List<int>> slotAllowed, int numGroups) {
   return slotToGroup;
 }
 
-/// Bygg heile sluttspeltreet, runde for runde (R32 først).
-/// [winnerSide] gir faktisk vinnar-side (1/2) for ein spelt kamp, elles null.
-/// Bygg sluttspeltreet.
-/// - [scoreFor]: kjelda til gruppeplasseringane. I "Projeksjon"-modus er dette
-///   deltakaren sine tippingar; i "Resultat"-modus er det faktiske resultat.
-/// - [winnerSide]: faktisk vinnar-side (1/2) for ein spelt sluttspelkamp.
-/// I "Resultat"-modus bør [scoreFor] berre gje resultat for ferdigspelte kampar,
-/// slik at treet fyller seg etter kvart som det vert spelt.
+/// Bygg heile sluttspilltreet, runde for runde (R32 først).
+/// [winnerSide] gir faktisk vinner-side (1/2) for en spilt kamp, elles null.
+/// Bygg sluttspilltreet.
+/// - [scoreFor]: kjelda til gruppeplasseringenne. I "Projeksjon"-modus er dette
+///   deltakeren sine tippingar; i "Resultat"-modus er det faktiske resultat.
+/// - [winnerSide]: faktisk vinner-side (1/2) for en spilt sluttspillkamp.
+/// I "Resultat"-modus bør [scoreFor] bare gje resultat for ferdigspilt kamper,
+/// slik at treet fyller seg etter hvert som det blir spilt.
 List<KoMatch> buildBracket({
   required ScoreFor scoreFor,
   required List<MatchInfo> matches,
@@ -387,9 +387,9 @@ List<KoMatch> buildBracket({
   final resolved = <int, KoMatch>{};
 
   // --- Tredjeplass-fordeling (FIFA-oppsett) ---------------------------------
-  // 1) 3.plass i kvar gruppe, med statistikk.
+  // 1) 3.plass i hver gruppe, med statistikk.
   final thirds = <_GroupRow>[]; // rad
-  final thirdGroupOf = <String, String>{}; // lagnamn -> gruppebokstav
+  final thirdGroupOf = <String, String>{}; // lagnavn -> gruppebokstav
   rich.forEach((g, rows) {
     if (rows.length >= 3) {
       final letter = g.replaceFirst('Group ', '');
@@ -397,15 +397,15 @@ List<KoMatch> buildBracket({
       thirdGroupOf[rows[2].team] = letter;
     }
   });
-  // 2) Rangér alle gruppetrearanane og ta dei 8 beste.
+  // 2) Rangér alle gruppetrearanane og ta de 8 beste.
   thirds.sort(_cmpStanding);
   final qualified = thirds.take(8).toList();
   final teamByGroup = <String, String>{
     for (final r in qualified) thirdGroupOf[r.team]!: r.team,
   };
   final qualGroups = teamByGroup.keys.toSet();
-  // 3) Samle 3.plass-plassane i kampnummer-rekkjefølgje.
-  final thirdSlots = <String>[]; // kodestrengar (unike)
+  // 3) Samle 3.plass-plassene i kampnummer-rekkjefølgje.
+  final thirdSlots = <String>[]; // kodestrengerar (unike)
   for (final m in ko) {
     for (final code in [m.team1, m.team2]) {
       if (_thirdGroups(code) != null && !thirdSlots.contains(code)) {
@@ -413,7 +413,7 @@ List<KoMatch> buildBracket({
       }
     }
   }
-  // 4) Matching som respekterer kva grupper kvar plass kan ta imot.
+  // 4) Matching som respekterer hva grupper hver plass kan ta imot.
   int gi(String letter) => letter.codeUnitAt(0) - 65;
   final slotAllowed = [
     for (final code in thirdSlots)
@@ -433,12 +433,12 @@ List<KoMatch> buildBracket({
   }
   // --------------------------------------------------------------------------
 
-  // I "Resultat"-modus resolvar gruppeplassane berre når gruppa er ferdigspelt,
-  // så då er dei ekte (ikkje projiserte). I "Projeksjon"-modus er dei tippa.
+  // I "Resultat"-modus resolvar gruppeplassene bare når gruppa er ferdigspilt,
+  // så da er de ekte (ikke projiserte). I "Projeksjon"-modus er de tippet.
   final markProjected = !requireComplete;
 
   KoTeam resolveSlot(String code) {
-    // Allereie eit ekte lag (gruppespel ferdig / kamp trekt).
+    // Allereie et ekte lag (gruppespill ferdig / kamp trekt).
     if (groupTeams.contains(code)) return KoTeam(code, code);
 
     final m = _slotRe.firstMatch(code);
@@ -463,7 +463,7 @@ List<KoMatch> buildBracket({
       final feeder = resolved[n];
       final fm = byNum[n];
       if (feeder != null && fm != null) {
-        final w = winnerSide(fm); // berre kjent når kampen er spelt
+        final w = winnerSide(fm); // bare kjent når kampen er spilt
         if (w == 1 || w == 2) {
           final advancing = (w == 1) == isWinner ? feeder.home : feeder.away;
           if (advancing.resolved) {
@@ -471,7 +471,7 @@ List<KoMatch> buildBracket({
           }
         }
       }
-      return KoTeam(null, isWinner ? 'Vinnar K$n' : 'Tapar K$n');
+      return KoTeam(null, isWinner ? 'Vinner K$n' : 'Taper K$n');
     }
     return KoTeam(null, code);
   }

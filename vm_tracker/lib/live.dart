@@ -1,7 +1,7 @@
-// Live-resultat frå ESPN sitt opne scoreboard-API (gratis, utan nøkkel, CORS-ope).
-// Vi matchar ESPN-kampar mot våre gruppekampar på lag-paret (unikt), og rettar
-// inn stillinga etter våre team1/team2. Sluttspelet har plassholdar-namn i vår
-// statiske data, så live gjeld førebels gruppespelet.
+// Live-resultat fra ESPN sitt opne scoreboard-API (gratis, utan nøkkel, CORS-ope).
+// Vi matchar ESPN-kamper mot våre gruppekamper på lag-paret (unikt), og rettar
+// inn stillinga etter våre team1/team2. Sluttspillet har plassholdar-navn i vår
+// statiske data, så live gjeld førebels gruppespillet.
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'models.dart';
@@ -9,7 +9,7 @@ import 'models.dart';
 const _espnBase =
     'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 
-// ESPN-namn -> våre (openfootball-engelske) namn. Resten er like.
+// ESPN-navn -> våre (openfootball-engelske) navn. Resten er like.
 const _alias = <String, String>{
   'Czechia': 'Czech Republic',
   'Türkiye': 'Turkey',
@@ -25,16 +25,16 @@ String _two(int n) => n.toString().padLeft(2, '0');
 class LiveInfo {
   final String state; // 'pre' | 'in' | 'post'
   final int? s1, s2; // mål for team1 / team2
-  final String detail; // t.d. "45'+2'", "Halftime", "FT"
+  final String detail; // f.eks. "45'+2'", "Halftime", "FT"
   const LiveInfo(this.state, this.s1, this.s2, this.detail);
   bool get inPlay => state == 'in';
   bool get finished => state == 'post';
 }
 
-/// Hentar live-data for kampar rundt no (i går–i morgon) og matchar dei mot
-/// gruppekampane våre. Returnerer kart frå kamp-nummer til [LiveInfo].
+/// Hentar live-data for kamper rundt no (i går–i morgon) og matchar de mot
+/// gruppekampene våre. Returnerer kart fra kamp-nummer til [LiveInfo].
 Future<Map<int, LiveInfo>> fetchLive(List<MatchInfo> matches) async {
-  // Lag-par (sortert, våre namn) -> kamp-nummer, berre for kampar med ekte namn.
+  // Lag-par (sortert, våre navn) -> kamp-nummer, bare for kamper med ekte navn.
   final pairToNum = <String, int>{};
   final byNum = <int, MatchInfo>{};
   for (final m in matches) {

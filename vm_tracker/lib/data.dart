@@ -7,7 +7,7 @@ import 'models.dart';
 const _wcUrl =
     'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
 
-/// Tipsa til éin deltakar, lasta frå app-ressurs.
+/// Tipsa til éin deltaker, lasta fra app-ressurs.
 class Participant {
   final String name;
   // pairKey ("TeamA|TeamB", sortert) -> mål for [sortert A, sortert B]
@@ -16,7 +16,7 @@ class Participant {
 
   const Participant(this.name, this.byPair, this.medals);
 
-  /// Tippa mål per lag for ein gitt kamp, eller null om ikkje tippa.
+  /// Tippa mål per lag for en gitt kamp, eller null om ikke tippet.
   Map<String, int>? forMatch(String t1, String t2) {
     final l = [t1, t2]..sort();
     final v = byPair['${l[0]}|${l[1]}'];
@@ -59,12 +59,12 @@ class Participant {
 Future<List<MatchInfo>> fetchMatches() async {
   final res = await http.get(Uri.parse(_wcUrl));
   if (res.statusCode != 200) {
-    throw Exception('Klarte ikkje hente kampdata (HTTP ${res.statusCode})');
+    throw Exception('Klarte ikke hente kampdata (HTTP ${res.statusCode})');
   }
   final j = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
   final list = j['matches'] as List;
-  // openfootball nummererer berre sluttspelet; gruppekampar manglar 'num'.
-  // Lista er kronologisk (72 gruppe + 32 sluttspel), så posisjon gir stabil id.
+  // openfootball nummererer bare sluttspillet; gruppekamper manglar 'num'.
+  // Lista er kronologisk (72 gruppe + 32 sluttspill), så posisjon gir stabil id.
   return [
     for (var i = 0; i < list.length; i++)
       MatchInfo.fromJson({

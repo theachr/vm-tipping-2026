@@ -1,4 +1,4 @@
-/// Datamodellar for VM 2026-kampar (kjelde: openfootball/worldcup.json).
+/// Datamodellar for VM 2026-kamper (kjelde: openfootball/worldcup.json).
 class MatchInfo {
   final int num;
   final String round, date, time, group, ground, team1, team2;
@@ -43,7 +43,7 @@ class MatchInfo {
         score2p: score2p,
       );
 
-  /// 1 = team1 vinn, 2 = team2 vinn, 0 = uavgjort (berre gruppespel). null = ikkje spelt.
+  /// 1 = team1 vinn, 2 = team2 vinn, 0 = uavgjort (bare gruppespill). null = ikke spilt.
   int? get winnerSide {
     if (score1p != null && score2p != null) {
       if (score1p! > score2p!) return 1;
@@ -68,7 +68,7 @@ class MatchInfo {
     return null;
   }
 
-  // openfootball lagrar resultat som eit nøsta objekt:
+  // openfootball lagrar resultat som et nøsta objekt:
   // "score": {"ft":[a,b], "ht":[a,b], "et":[a,b], "p":[a,b]}
   // ft = full tid, et = etter ekstraomgangar (kumulativt), p = straffer.
   static int? _side(dynamic score, String key, int idx) {

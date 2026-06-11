@@ -21,7 +21,7 @@ class AppTheme {
   final bool rainbow;
 
   /// Brutalistisk stil: skarpe hjørne, tjukke svarte kantar, ingen skuggar,
-  /// monospace-font, papirkvit bakgrunn med ein hard aksentfarge.
+  /// monospace-font, papirkvit bakgrunn med en hard aksentfarge.
   final bool brutalist;
 
   /// Skalering av all tekst (1.0 = normal, 2.0 = dobbel).
@@ -32,17 +32,17 @@ class AppTheme {
 
 /// Klassisk Pride-regnboge (6 striper).
 const kPrideColors = <Color>[
-  Color(0xFFE40303), // raud
+  Color(0xFFE40303), // rød
   Color(0xFFFF8C00), // oransje
   Color(0xFFFFED00), // gul
-  Color(0xFF008026), // grøn
+  Color(0xFF008026), // grønn
   Color(0xFF004DFF), // blå
   Color(0xFF750787), // lilla
 ];
 
 const kThemes = <AppTheme>[
   AppTheme('Rosa natt', Color(0xFFE91E8C), Brightness.dark),
-  AppTheme('Stadiongrøn', Color(0xFF2E7D32), Brightness.dark),
+  AppTheme('Stadiongrønnn', Color(0xFF2E7D32), Brightness.dark),
   AppTheme('Kveldsnavy', Color(0xFF5C7CFA), Brightness.dark),
   AppTheme('Gull & svart', Color(0xFFFFB300), Brightness.dark),
   AppTheme('Pride natt', Color(0xFF9C27B0), Brightness.dark, rainbow: true),
@@ -53,7 +53,7 @@ const kThemes = <AppTheme>[
       brutalist: true, textScale: 2.0),
 ];
 
-/// Byggjer ThemeData for eit tema. Brutalist får ein heilt eigen, hard stil.
+/// Byggjer ThemeData for et tema. Brutalist får en heilt eigen, hard stil.
 ThemeData buildAppTheme(AppTheme t) {
   if (!t.brutalist) {
     return ThemeData(
@@ -196,7 +196,7 @@ class VmTippingApp extends StatelessWidget {
   }
 }
 
-// ---- Delte resultat-hjelparar (resultat er felles for alle deltakarar) ----
+// ---- Delte resultat-hjelparar (resultat er felles for alle deltakere) ----
 
 /// Faktiske mål [m1, m2] (manuell overstyring vinn over offisielt), eller null.
 List<int>? actualResult(MatchInfo m, Overrides ovr) {
@@ -206,7 +206,7 @@ List<int>? actualResult(MatchInfo m, Overrides ovr) {
   return null;
 }
 
-/// 1/2 = vinnar-side, 0 = uavgjort, null = ikkje avgjort. Override-medviten.
+/// 1/2 = vinner-side, 0 = uavgjort, null = ikke avgjort. Override-medviten.
 int? winnerSideOf(MatchInfo m, Overrides ovr) {
   final o = ovr.get(m.num);
   if (o != null) return o[0] > o[1] ? 1 : (o[1] > o[0] ? 2 : 0);
@@ -242,7 +242,7 @@ Color advColor(Advance a) {
     case Advance.direct:
       return Colors.green;
     case Advance.thirdIn:
-      return const Color(0xFF8BC34A); // lysegrøn
+      return const Color(0xFF8BC34A); // lysegrønnn
     case Advance.thirdOut:
       return const Color(0xFFF5A623); // oransje
     case Advance.out:
@@ -253,9 +253,9 @@ Color advColor(Advance a) {
 String advLabel(TeamStanding r) {
   switch (r.advance) {
     case Advance.direct:
-      return 'Vidare';
+      return 'Videre';
     case Advance.thirdIn:
-      return '3.pl (nr ${r.thirdRank}) → vidare';
+      return '3.pl (nr ${r.thirdRank}) → videre';
     case Advance.thirdOut:
       return '3.pl (nr ${r.thirdRank}) → ute';
     case Advance.out:
@@ -263,8 +263,8 @@ String advLabel(TeamStanding r) {
   }
 }
 
-/// Gjenbrukbart gruppetabell-kort. [showStatus] = vis vidare-status (skru av
-/// før gruppa har spelt nokon kampar, så vi ikkje fargar ei tom 0-0-tabell).
+/// Gjenbrukbart gruppetabell-kort. [showStatus] = vis videre-status (skru av
+/// før gruppa har spilt noen kamper, så vi ikke fargar ei tom 0-0-tabell).
 class GroupTableCard extends StatelessWidget {
   final List<TeamStanding> rows;
   final bool showStatus;
@@ -373,8 +373,8 @@ class GroupTableCard extends StatelessWidget {
   }
 }
 
-/// Toppnivå-fane: sluttspeloppsettet (felles) ut frå faktiske resultat,
-/// med ein scenario-veljar ("kven møter laget vidare").
+/// Toppnivå-fane: sluttspilloppsettet (felles) ut fra faktiske resultat,
+/// med en scenario-veljar ("hvem møter laget videre").
 class KnockoutView extends StatefulWidget {
   final List<MatchInfo> matches;
   final Overrides overrides;
@@ -389,7 +389,7 @@ class _KnockoutViewState extends State<KnockoutView> {
   String? _team;
   int _placement = 1;
 
-  /// Lagnamn -> gruppebokstav (A..L), frå gruppekampane.
+  /// Lagnavn -> gruppebokstav (A..L), fra gruppekampene.
   Map<String, String> get _teamGroup {
     final out = <String, String>{};
     for (final m in widget.matches.where((m) => m.isGroup)) {
@@ -420,10 +420,10 @@ class _KnockoutViewState extends State<KnockoutView> {
             matches: ko,
             highlight: highlight,
             caption:
-                'Sluttspeloppsettet ut frå faktiske resultat (felles for alle). '
-                'Plassane (1A, 2B, 3.-arar, vinnar/tapar av kamp) fyller seg med '
-                'ekte lag etter kvart som gruppene og sluttspelkampane blir spelte. '
-                'Venstre og høgre halvdel møtest i finalen i midten.',
+                'Sluttspilloppsettet ut fra faktiske resultat (felles for alle). '
+                'Plassene (1A, 2B, 3.-ere, vinner/taper av kamp) fyller seg med '
+                'ekte lag etter hvert som gruppene og sluttspillkampene blir spilt. '
+                'Venstre og høyre halvdel møtes i finalen i midten.',
           ),
         ),
       ],
@@ -445,15 +445,15 @@ class _KnockoutViewState extends State<KnockoutView> {
               children: [
                 Icon(Icons.help_outline, size: 18, color: scheme.primary),
                 const SizedBox(width: 6),
-                const Text('Spør om sluttspelet',
+                const Text('Spør om sluttspillet',
                     style:
                         TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 4),
             const Text(
-              'Vel eit lag og kva plassering du tenkjer deg – så viser eg kven '
-              'dei møter runde for runde (om dei held fram).',
+              'Velg et lag og hvilken plassering du tenker deg – så viser jeg hvem '
+              'de møter runde for runde (om de går videre).',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 10),
@@ -486,7 +486,7 @@ class _KnockoutViewState extends State<KnockoutView> {
                 SegmentedButton<int>(
                   showSelectedIcon: false,
                   segments: const [
-                    ButtonSegment(value: 1, label: Text('Vinnar')),
+                    ButtonSegment(value: 1, label: Text('Vinner')),
                     ButtonSegment(value: 2, label: Text('2.-plass')),
                     ButtonSegment(value: 3, label: Text('3.-plass')),
                   ],
@@ -511,7 +511,7 @@ class _KnockoutViewState extends State<KnockoutView> {
     final sc = scenarioPath(
         matches: widget.matches, group: group, placement: _placement);
     if (sc.steps.isEmpty) {
-      return Text('Fann ingen sluttspelveg for dette valet.',
+      return Text('Fant ingen sluttspillvei for dette valget.',
           style: TextStyle(color: scheme.outline));
     }
     return Column(
@@ -554,7 +554,7 @@ class _KnockoutViewState extends State<KnockoutView> {
   }
 }
 
-/// Toppnivå-fane: alle gruppetabellane ut frå faktiske resultat (felles).
+/// Toppnivå-fane: alle gruppetabellane ut fra faktiske resultat (felles).
 class GroupStageView extends StatelessWidget {
   final List<MatchInfo> matches;
   final Overrides overrides;
@@ -565,7 +565,7 @@ class GroupStageView extends StatelessWidget {
   Widget build(BuildContext context) {
     final tables = groupTables(_resultScore(overrides), matches);
     final keys = tables.keys.toList()..sort();
-    // Tal spelte gruppekampar per gruppe (for å avgjere om status er meiningsfull).
+    // Tal spilt gruppekamper per gruppe (for å avgjere om status er meiningsfull).
     final playedByGroup = <String, int>{};
     for (final m in matches.where((m) => m.isGroup)) {
       if (actualResult(m, overrides) != null) {
@@ -577,10 +577,10 @@ class GroupStageView extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
           child: Text(
-            'Gruppetabellar ut frå faktiske resultat. Fyller seg etter kvart '
-            'som kampane vert spelte. Grøn = 1./2.plass (direkte vidare), '
-            'lysegrøn = 3.plass blant dei 8 beste, oransje = 3.plass utanfor, '
-            'raud = ute.',
+            'Gruppetabeller ut fra faktiske resultat. Fyller seg etter hvert '
+            'som kampene blir spilt. Grøn = 1./2.plass (direkte videre), '
+            'lysegrønnn = 3.plass blant de 8 beste, oransje = 3.plass utenfor, '
+            'rød = ute.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),
@@ -605,7 +605,7 @@ class GroupStageView extends StatelessWidget {
 }
 
 // ---- Medalje-trafikklys --------------------------------------------------
-// Vurderer om eit medaljetips framleis er oppnåeleg.
+// Vurderer om et medaljetips fortsatt er oppnåeleg.
 enum MedalFeas { ok, caution, impossible, achieved }
 
 class MedalEval {
@@ -620,17 +620,17 @@ ScoreFor _resultScore(Overrides ovr) => (m) {
       return a == null ? null : {m.team1: a[0], m.team2: a[1]};
     };
 
-/// Lag som er slått ut i verkelegheita: taparar av spelte sluttspelkampar, og
-/// lag som vart sist i ei ferdigspelt gruppe (4.plass kan ikkje gå vidare).
+/// Lag som er slått ut i verkelegheita: taperar av spilt sluttspillkamper, og
+/// lag som vart sist i ei ferdigspilt gruppe (4.plass kan ikke gå videre).
 Set<String> _eliminatedTeams(List<MatchInfo> matches, Overrides ovr) {
   final out = <String>{};
   final score = _resultScore(ovr);
-  // Sisteplass i ferdigspelte grupper kan ikkje gå vidare.
+  // Sisteplass i ferdigspilt grupper kan ikke gå videre.
   final st = standingsFromScore(score, matches, requireComplete: true);
   for (final rows in st.values) {
     if (rows.length == 4) out.add(rows.last);
   }
-  // Taparar av spelte sluttspelkampar.
+  // Taperar av spilt sluttspillkamper.
   final ko = buildBracket(
     scoreFor: score,
     matches: matches,
@@ -651,11 +651,11 @@ Set<String> _eliminatedTeams(List<MatchInfo> matches, Overrides ovr) {
 /// Per-medalje status for trafikklyset.
 Map<String, MedalEval> evalMedals(
     Participant p, List<MatchInfo> matches, Overrides ovr) {
-  final picks = p.medals; // gold/silver/bronze -> lagnamn
+  final picks = p.medals; // gold/silver/bronze -> lagnavn
   final actual = actualMedals(matches, ovr);
   final eliminated = _eliminatedTeams(matches, ovr);
 
-  // Projisert halvdel (frå deltakaren sine tips) for kvar kvalifisert lag.
+  // Projisert halvdel (fra deltakeren sine tips) for hver kvalifisert lag.
   final proj = buildBracket(
     scoreFor: _tipsScore(p),
     matches: matches,
@@ -663,7 +663,7 @@ Map<String, MedalEval> evalMedals(
   );
   final leftR32 = _leftRounds[0].toSet();
   final rightR32 = _rightRounds[0].toSet();
-  final halfOf = <String, String>{}; // lagnamn -> 'V'/'H'
+  final halfOf = <String, String>{}; // lagnavn -> 'V'/'H'
   for (final km in proj) {
     final isLeft = leftR32.contains(km.num);
     final isRight = rightR32.contains(km.num);
@@ -683,18 +683,18 @@ Map<String, MedalEval> evalMedals(
   MedalEval eval(String key, String medalLabel, String? finalMedalKey) {
     final team = picks[key];
     if (team == null || team.isEmpty) {
-      return const MedalEval(MedalFeas.caution, 'Inkje tips');
+      return const MedalEval(MedalFeas.caution, 'Ingen tips');
     }
-    // 1) Allereie avgjord i verkelegheita?
+    // 1) Allereie avgjort i verkelegheita?
     final decided = actual[finalMedalKey];
     if (decided != null) {
       return decided == team
-          ? MedalEval(MedalFeas.achieved, 'Oppnådd – $medalLabel sikra')
-          : MedalEval(MedalFeas.impossible, '$medalLabel gjekk til $decided');
+          ? MedalEval(MedalFeas.achieved, 'Oppnådd – $medalLabel sikret')
+          : MedalEval(MedalFeas.impossible, '$medalLabel gikk til $decided');
     }
     // 2) Slått ut?
     if (eliminated.contains(team)) {
-      return MedalEval(MedalFeas.impossible, '$team er alt ute');
+      return MedalEval(MedalFeas.impossible, '$team er allerede ute');
     }
     // 3) Duplikat?
     final others = [
@@ -703,19 +703,19 @@ Map<String, MedalEval> evalMedals(
     ];
     if (others.contains(team)) {
       return const MedalEval(
-          MedalFeas.impossible, 'Same lag er tippa på fleire medaljar');
+          MedalFeas.impossible, 'Samme lag er tippet på flere medaljer');
     }
-    // 4) Kvalifiserer laget i deltakaren si eiga projeksjon?
+    // 4) Kvalifiserer laget i deltakeren si eiga projeksjon?
     if (!qualified.contains(team)) {
       return MedalEval(MedalFeas.caution,
-          'Mogleg, men dine tips har $team ute av gruppespelet');
+          'Mulig, men dine tips har $team ute av gruppespillet');
     }
-    // 5) Gull/sølv på same halvdel (møtest før finalen) i eigne tips?
+    // 5) Gull/sølv på samme halvdel (møtes før finalen) i eigne tips?
     if ((key == 'gold' || key == 'silver') && sameHalf) {
       return const MedalEval(MedalFeas.caution,
-          'Gull og sølv hamnar på same halvdel i dine tips – dei møtest før finalen');
+          'Gull og sølv havner på samme halvdel i dine tips – de møtes før finalen');
     }
-    return const MedalEval(MedalFeas.ok, 'Mogleg og i tråd med dine tips');
+    return const MedalEval(MedalFeas.ok, 'Mulig og i tråd med dine tips');
   }
 
   return {
@@ -737,8 +737,8 @@ int matchPointsFor(Participant p, MatchInfo m, Overrides ovr) {
   );
 }
 
-/// Midlertidige poeng ut frå live-stillinga (kampen pågår), eller null om
-/// kampen ikkje er live eller deltakaren ikkje har tippa han.
+/// Midlertidige poeng ut fra live-stillinga (kampen pågår), eller null om
+/// kampen ikke er live eller deltakeren ikke har tippet han.
 int? liveTempPointsFor(Participant p, MatchInfo m, LiveInfo? li) {
   if (li == null || !li.inPlay || li.s1 == null || li.s2 == null) return null;
   final pred = p.forMatch(m.team1, m.team2);
@@ -751,7 +751,7 @@ int? liveTempPointsFor(Participant p, MatchInfo m, LiveInfo? li) {
   );
 }
 
-/// Sum av midlertidige poeng over alle live-kampar for ein deltakar.
+/// Sum av midlertidige poeng over alle live-kamper for en deltaker.
 int liveTempTotal(Participant p, List<MatchInfo> matches, Map<int, LiveInfo> live) {
   var sum = 0;
   for (final m in matches) {
@@ -810,7 +810,7 @@ class _HomePageState extends State<HomePage> {
   bool _soundOn = true;
   static const _soundPrefKey = 'goal_sound';
 
-  /// Namn på deltakarar som er skjult i visninga (lagra lokalt).
+  /// Navn på deltakere som er skjult i visninga (lagra lokalt).
   Set<String> _hidden = {};
   static const _hiddenPrefKey = 'hidden_participants';
 
@@ -827,7 +827,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  /// Sann om nokon kamp har fått fleire mål enn sist (utløyser pling).
+  /// Sann om noen kamp har fått flere mål enn sist (utløyser pling).
   bool _goalScored(Map<int, LiveInfo> old, Map<int, LiveInfo> fresh) {
     for (final e in fresh.entries) {
       final n = old[e.key], f = e.value;
@@ -838,8 +838,8 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
-  /// Hentar live-data og flettar ferdigspelte (post) gruppekampar inn som
-  /// resultat, slik at tabellar, tre og poeng oppdaterer seg automatisk.
+  /// Hentar live-data og flettar ferdigspilt (post) gruppekamper inn som
+  /// resultat, slik at tabeller, tre og poeng oppdaterer seg automatisk.
   Future<void> _applyLive() async {
     if (_raw.isEmpty) return;
     final live = await fetchLive(_raw);
@@ -886,7 +886,7 @@ class _HomePageState extends State<HomePage> {
         _soundOn = prefs.getBool(_soundPrefKey) ?? true;
         _loading = false;
       });
-      // Live-resultat: hent no, og oppdater kvart minutt.
+      // Live-resultat: hent no, og oppdater hvert minutt.
       await _applyLive();
       _liveTimer?.cancel();
       _liveTimer =
@@ -909,7 +909,7 @@ class _HomePageState extends State<HomePage> {
     await prefs.setStringList(_hiddenPrefKey, hidden.toList());
   }
 
-  /// Dialog med avkryssing for kvar deltakar.
+  /// Dialog med avkryssing for hver deltaker.
   void _openFilter() {
     showDialog<void>(
       context: context,
@@ -919,7 +919,7 @@ class _HomePageState extends State<HomePage> {
         return StatefulBuilder(
           builder: (ctx, setLocal) {
             return AlertDialog(
-              title: const Text('Vis deltakarar'),
+              title: const Text('Vis deltakere'),
               content: SizedBox(
                 width: 320,
                 child: Column(
@@ -990,7 +990,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const Icon(Icons.cloud_off, size: 48),
                 const SizedBox(height: 12),
-                Text('Klarte ikkje hente data:\n$_error',
+                Text('Klarte ikke hente data:\n$_error',
                     textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -1006,7 +1006,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Sorter på reelle poeng + live «temp»-poeng, så tavla flyttar seg
-    // medan kampane går. Tiebreak: reell total, så namn.
+    // medan kampene går. Tiebreak: reell total, så navn.
     int effective(Standing s) =>
         s.total + liveTempTotal(s.p, _matches, _live);
     final standings = _visible
@@ -1024,7 +1024,7 @@ class _HomePageState extends State<HomePage> {
         title: const Text('VM Tipping 2026'),
         actions: [
           IconButton(
-            tooltip: 'Filtrer deltakarar',
+            tooltip: 'Filtrer deltakere',
             onPressed: _openFilter,
             icon: Icon(_hidden.isEmpty
                 ? Icons.filter_list
@@ -1097,7 +1097,7 @@ class _HomePageState extends State<HomePage> {
                       : KnockoutView(matches: _matches, overrides: _ovr!);
 
           // Smal skjerm (mobil): innhald i full breidde, meny kjem
-          // som botnmeny under (sjå bottomNavigationBar).
+          // som botnmeny under (se bottomNavigationBar).
           if (constraints.maxWidth < 600) return content;
 
           // Brei skjerm (mac/web): fast sidemeny til venstre.
@@ -1122,7 +1122,7 @@ class _HomePageState extends State<HomePage> {
                   NavigationRailDestination(
                     icon: Icon(Icons.event_outlined),
                     selectedIcon: Icon(Icons.event),
-                    label: Text('Kampar'),
+                    label: Text('Kamper'),
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.account_tree_outlined),
@@ -1155,7 +1155,7 @@ class _HomePageState extends State<HomePage> {
                 NavigationDestination(
                   icon: Icon(Icons.event_outlined),
                   selectedIcon: Icon(Icons.event),
-                  label: 'Kampar',
+                  label: 'Kamper',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.account_tree_outlined),
@@ -1205,7 +1205,7 @@ class _HomePageState extends State<HomePage> {
                       fontWeight: FontWeight.bold,
                       color: headerFg,
                       shadows: shadows)),
-              Text('$_playedGroupMatches av 72 gruppekampar spelt',
+              Text('$_playedGroupMatches av 72 gruppekamper spilt',
                   style: TextStyle(color: headerFg, shadows: shadows)),
             ],
           ),
@@ -1234,7 +1234,7 @@ class _HomePageState extends State<HomePage> {
       ),
       title: Text(s.p.name,
           style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text('Gruppe: ${s.group} · Medaljar: ${s.medal} · ${s.played} kampar talt'),
+      subtitle: Text('Gruppe: ${s.group} · Medaljer: ${s.medal} · ${s.played} kamper talt'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1287,7 +1287,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ---- Kommande kampar (kronologisk, med alle sine tips) ----
+// ---- Kommende kamper (kronologisk, med alle sine tips) ----
 
 const _months = [
   '', 'jan', 'feb', 'mars', 'april', 'mai', 'juni',
@@ -1311,10 +1311,10 @@ String _prettyDate(String iso) {
 final _timeRe = RegExp(r'^(\d{1,2}):(\d{2})\s*UTC([+-]\d{1,2})$');
 
 // Noreg er på sommartid (CEST = UTC+2) heile VM-vindauget (11. juni–19. juli),
-// så vi kan bruke ein fast offset.
+// så vi kan bruke en fast offset.
 const _osloOffset = 2;
 
-/// Kamptidspunktet i norsk tid, eller null om tid/dato ikkje kan tolkast.
+/// Kamptidspunktet i norsk tid, eller null om tid/dato ikke kan tolkast.
 DateTime? _osloDateTime(MatchInfo m) {
   final t = _timeRe.firstMatch(m.time.trim());
   final d = m.date.split('-');
@@ -1338,21 +1338,21 @@ String _osloTime(MatchInfo m) {
   return '${_two(dt.hour)}:${_two(dt.minute)}';
 }
 
-/// Dato (ISO) i norsk tid – kan rulle over til neste dag for seine kampar.
+/// Dato (ISO) i norsk tid – kan rulle over til neste dag for seine kamper.
 String _osloDateIso(MatchInfo m) {
   final dt = _osloDateTime(m);
   if (dt == null) return m.date;
   return '${dt.year}-${_two(dt.month)}-${_two(dt.day)}';
 }
 
-/// Sorteringsnøkkel: faktisk tidspunkt (UTC-instans), elles rå streng.
+/// Sorteringsnøkkel: faktisk tidspunkt (UTC-instans), elles rå strenger.
 String _sortKey(MatchInfo m) {
   final dt = _osloDateTime(m);
   if (dt == null) return '${m.date} ${m.time}';
   return dt.toIso8601String();
 }
 
-/// Liten pulserande prikk – signaliserer at kampen framleis pågår.
+/// Liten pulserande prikk – signaliserer at kampen fortsatt pågår.
 class _PulsingDot extends StatefulWidget {
   final double size;
   const _PulsingDot({this.size = 8});
@@ -1422,7 +1422,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
           ? all.where((m) => actualResult(m, ovr) == null).toList()
           : all;
       body = shown.isEmpty
-          ? const Center(child: Text('Ingen kampar å vise.'))
+          ? const Center(child: Text('Ingen kamper å vise.'))
           : ListView(children: _groupedByDay(shown));
     }
 
@@ -1434,7 +1434,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
             showSelectedIcon: false,
             segments: const [
               ButtonSegment(
-                  value: _MatchFilter.upcoming, label: Text('Kommande')),
+                  value: _MatchFilter.upcoming, label: Text('Kommende')),
               ButtonSegment(
                   value: _MatchFilter.nextPerGroup,
                   label: Text('Neste pr. gruppe')),
@@ -1449,7 +1449,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     );
   }
 
-  /// Dei neste (inntil 2) uspelte kampane i kvar gruppe, under gruppe-overskrift.
+  /// De neste (inntil 2) uspilt kampene i hver gruppe, under gruppe-overskrift.
   Widget _nextPerGroupList(List<MatchInfo> all, Overrides ovr) {
     final byGroup = <String, List<MatchInfo>>{};
     for (final m in all) {
@@ -1459,7 +1459,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     }
     final keys = byGroup.keys.toList()..sort();
     if (keys.isEmpty) {
-      return const Center(child: Text('Ingen kommande gruppekampar.'));
+      return const Center(child: Text('Ingen kommende gruppekamper.'));
     }
     final out = <Widget>[];
     final scheme = Theme.of(context).colorScheme;
@@ -1490,7 +1490,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     return ListView(children: out);
   }
 
-  /// Byggjer lista med ein dato-skiljelinje ("ny dag") føre kvar nye dag.
+  /// Byggjer lista med en dato-skiljelinje ("ny dag") føre hver nye dag.
   List<Widget> _groupedByDay(List<MatchInfo> shown) {
     final out = <Widget>[];
     String? lastDate;
@@ -1521,7 +1521,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
                 fontWeight: FontWeight.bold, color: scheme.primary, fontSize: 15),
           ),
           const SizedBox(width: 8),
-          Text('$count ${count == 1 ? 'kamp' : 'kampar'}',
+          Text('$count ${count == 1 ? 'kamp' : 'kamper'}',
               style: TextStyle(color: scheme.outline, fontSize: 12)),
           const SizedBox(width: 10),
           Expanded(child: Divider(color: scheme.primary.withValues(alpha: 0.4))),
@@ -1535,7 +1535,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     final act = actualResult(m, widget.overrides);
     final label = m.isGroup ? m.group.replaceFirst('Group', 'Gruppe') : m.round;
 
-    // Kven har tippa på denne kampen?
+    // Hvem har tippet på denne kampen?
     final tippers = <Participant>[
       for (final p in widget.participants)
         if (p.forMatch(m.team1, m.team2) != null) p
@@ -1544,7 +1544,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     final li = widget.live[m.num];
     Widget trailing;
     if (li != null && li.inPlay) {
-      // Live: raud LIVE-merke + stilling + spelt-minutt.
+      // Live: rød LIVE-merke + stilling + spilt-minutt.
       trailing = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -1608,8 +1608,8 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 m.isGroup
-                    ? 'Ingen har tippa denne kampen enno.'
-                    : 'Sluttspelkampar blir ikkje tippa på resultat.',
+                    ? 'Ingen har tippet denne kampen ennå.'
+                    : 'Sluttspillkamper blir ikke tippet på resultat.',
                 style: TextStyle(
                     color: scheme.outline, fontStyle: FontStyle.italic),
               ),
@@ -1665,7 +1665,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         badge = '0p';
       }
     } else if (tempPts != null) {
-      // Live: midlertidige poeng ut frå stillinga akkurat no.
+      // Live: midlertidige poeng ut fra stillinga akkurat no.
       temp = true;
       badge = 'temp $tempPts' 'p';
       badgeColor = Colors.red;
@@ -1705,7 +1705,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
   }
 }
 
-// ---- Detaljside for éin deltakar ----
+// ---- Detaljside for éin deltaker ----
 
 class ParticipantPage extends StatefulWidget {
   final Participant participant;
@@ -1726,11 +1726,11 @@ class _ParticipantPageState extends State<ParticipantPage> {
   Overrides get _ovr => widget.overrides;
   List<MatchInfo> get _matches => widget.matches;
 
-  // Sluttspeltre-modus: true = faktiske resultat, false = denne deltakaren si
+  // Sluttspilltre-modus: true = faktiske resultat, false = denne deltakeren si
   // projeksjon (tipping). Treet skal i utgangspunktet vise resultata.
   bool _bracketResults = true;
 
-  // Gruppetabell-modus: same logikk – tabellen viser resultata som standard.
+  // Gruppetabell-modus: samme logikk – tabellen viser resultata som standard.
   bool _groupResults = true;
 
   Standing get _standing => standingFor(_p, _matches, _ovr);
@@ -1745,8 +1745,8 @@ class _ParticipantPageState extends State<ParticipantPage> {
           title: Text(_p.name),
           bottom: const TabBar(tabs: [
             Tab(text: 'Gruppespill'),
-            Tab(text: 'Sluttspeltre'),
-            Tab(text: 'Medaljar'),
+            Tab(text: 'Sluttspilltre'),
+            Tab(text: 'Medaljer'),
           ]),
         ),
         body: Column(
@@ -1801,9 +1801,9 @@ class _ParticipantPageState extends State<ParticipantPage> {
               Expanded(
                 child: Text(
                   _bracketResults
-                      ? 'Faktiske resultat. Plassane fyller seg etter kvart '
-                          'som gruppene og kampane vert ferdigspelte.'
-                      : '${_p.name} si projeksjon ut frå tippingane.',
+                      ? 'Faktiske resultat. Plassene fyller seg etter hvert '
+                          'som gruppene og kampene blir ferdigspilt.'
+                      : '${_p.name} sin projeksjon ut fra tippingene.',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ),
@@ -1815,11 +1815,11 @@ class _ParticipantPageState extends State<ParticipantPage> {
             matches: ko,
             highlight: _p.medals.values.toSet(),
             caption: _bracketResults
-                ? 'Sluttspeltreet ut frå faktiske resultat. Medaljetipsa dine '
-                    'er utheva. Venstre og høgre halvdel møtest i finalen i '
-                    'midten; ekte lag fyller inn etter kvart.'
-                : '${_p.name} si projeksjon ut frå tippingane. Medaljetipsa '
-                    'er utheva. Venstre og høgre halvdel møtest i finalen i midten.',
+                ? 'Sluttspilltreet ut fra faktiske resultat. Medaljetipsene dine '
+                    'er uthevet. Venstre og høyre halvdel møtes i finalen i '
+                    'midten; ekte lag fyller inn etter hvert.'
+                : '${_p.name} sin projeksjon ut fra tippingene. Medaljetipsene '
+                    'er uthevet. Venstre og høyre halvdel møtes i finalen i midten.',
           ),
         ),
       ],
@@ -1840,22 +1840,22 @@ class _ParticipantPageState extends State<ParticipantPage> {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: Text(
-            'Fargeprikk = om medaljen framleis går an:\n'
-            '🟢 grøn = mogleg og i tråd med dine tips\n'
-            '🟡 gul = mogleg, men dine tips gjev ein konflikt (t.d. gull og '
-            'sølv på same halvdel – då møtest dei før finalen)\n'
-            '🔴 raud = umogleg (laget er alt ute, eller medaljen er avgjord).\n'
-            'Hald peikaren over prikken for forklaring.',
+            'Fargeprikk = om medaljen fortsatt går an:\n'
+            '🟢 grønn = mulig og i tråd med dine tips\n'
+            '🟡 gul = mulig, men dine tips gir en konflikt (f.eks. gull og '
+            'sølv på samme halvdel – da møtes de før finalen)\n'
+            '🔴 rød = umulig (laget er allerede ute, eller medaljen er avgjort).\n'
+            'Hold pekeren over prikken for forklaring.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
           child: Text(
-            'Hugs: gull og sølv må kome frå kvar si halvdel av treet '
-            '(dei møtest i finalen). Bronse er vinnaren av bronsefinalen '
-            '(taparen av ein semifinale). Sjå «Sluttspeltre» for kven som '
-            'kan møte kven.',
+            'Husk: gull og sølv må komme fra hver sin halvdel av treet '
+            '(de møtes i finalen). Bronse er vinneren av bronsefinalen '
+            '(taperen av en semifinale). Se «Sluttspilltre» for hvem som '
+            'kan møte hvem.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),
@@ -1873,7 +1873,7 @@ class _ParticipantPageState extends State<ParticipantPage> {
     final tables = _groupResults
         ? groupTables(_resultScore(_ovr), _matches)
         : groupTables(_tipsScore(_p), _matches);
-    // Tal spelte gruppekampar per gruppe (for status-fargen i Resultat-modus).
+    // Tal spilt gruppekamper per gruppe (for status-fargen i Resultat-modus).
     final playedByGroup = <String, int>{};
     for (final m in _matches.where((m) => m.isGroup)) {
       if (actualResult(m, _ovr) != null) {
@@ -1906,9 +1906,9 @@ class _ParticipantPageState extends State<ParticipantPage> {
               Expanded(
                 child: Text(
                   _groupResults
-                      ? 'Faktiske resultat. Poenga fyller seg etter kvart som '
-                          'kampane vert spelte.'
-                      : '${_p.name} si projeksjon ut frå tippingane.',
+                      ? 'Faktiske resultat. Poengene fyller seg etter hvert som '
+                          'kampene blir spilt.'
+                      : '${_p.name} sin projeksjon ut fra tippingene.',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ),
@@ -1942,7 +1942,7 @@ class _ParticipantPageState extends State<ParticipantPage> {
     final pts = matchPointsFor(_p, m, _ovr);
     final overridden = _ovr.get(m.num) != null;
     final predStr = pred == null ? '–' : '${pred[m.team1]}–${pred[m.team2]}';
-    final actStr = act == null ? 'ikkje spelt' : '${act[0]}–${act[1]}';
+    final actStr = act == null ? 'ikke spilt' : '${act[0]}–${act[1]}';
 
     return ListTile(
       dense: true,
@@ -1992,7 +1992,7 @@ class _ParticipantPageState extends State<ParticipantPage> {
                 controller: c1,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(labelText: 'Heime'),
+                decoration: const InputDecoration(labelText: 'Hjemme'),
               ),
             ),
             const Padding(
@@ -2063,7 +2063,7 @@ class _ScoreHeader extends StatelessWidget {
               style: TextStyle(color: scheme.onPrimaryContainer)),
           const SizedBox(height: 4),
           Text(
-            'Gruppespel: $group · Medaljar: $medal · $played kampar talt',
+            'Gruppespill: $group · Medaljer: $medal · $played kamper talt',
             style: TextStyle(color: scheme.onPrimaryContainer, fontSize: 12),
           ),
         ],
@@ -2193,7 +2193,7 @@ class _MedalCard extends StatelessWidget {
   }
 }
 
-// ---- Sluttspeltre (to-sidig: venstre + høgre møtest i finalen i midten) ----
+// ---- Sluttspilltre (to-sidig: venstre + høyre møtes i finalen i midten) ----
 
 const double _cardW = 190;
 const double _cardH = 64;
@@ -2201,16 +2201,16 @@ const double _vGap = 14;
 const double _colGap = 52;
 const double _leftPad = 24;
 const double _topPad = 56;
-const double _titleH = 18; // høgd til tittel over eit kort
+const double _titleH = 18; // høgd til tittel over et kort
 
-// Venstre halvdel (veks mot høgre): R32 -> R16 -> QF -> SF.
+// Venstre halvdel (veks mot høyre): R32 -> R16 -> QF -> SF.
 const _leftRounds = <List<int>>[
   [74, 77, 73, 75, 83, 84, 81, 82],
   [89, 90, 93, 94],
   [97, 98],
   [101],
 ];
-// Høgre halvdel (veks mot venstre, spegla).
+// Høyre halvdel (veks mot venstre, spegla).
 const _rightRounds = <List<int>>[
   [76, 78, 79, 80, 86, 88, 85, 87],
   [91, 92, 95, 96],
@@ -2250,7 +2250,7 @@ class BracketView extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     final lc = _mkCenters(8); // venstre
-    final rc = _mkCenters(8); // høgre
+    final rc = _mkCenters(8); // høyre
     final midY = lc[3][0]; // == rc[3][0]: midten der finalen står
 
     final totalH = _topPad + 8 * (_cardH + _vGap) + 40;
@@ -2311,9 +2311,9 @@ class BracketView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Text(
             caption ??
-                'Venstre og høgre halvdel møtest i finalen i midten. '
-                    'Dra/scroll for å sjå heile treet; ekte lag fyller inn '
-                    'etter kvart som kampane blir spelt.',
+                'Venstre og høyre halvdel møtes i finalen i midten. '
+                    'Dra/scroll for å se heile treet; ekte lag fyller inn '
+                    'etter hvert som kampene blir spilt.',
             style: const TextStyle(fontSize: 12),
           ),
         ),
@@ -2417,7 +2417,7 @@ class _MatchCard extends StatelessWidget {
 }
 
 class _ConnectorPainter extends CustomPainter {
-  final List<List<double>> lc, rc; // venstre/høgre senter per runde
+  final List<List<double>> lc, rc; // venstre/høyre senter per runde
   final double midY;
   final Color color;
   _ConnectorPainter(this.lc, this.rc, this.midY, this.color);
@@ -2429,7 +2429,7 @@ class _ConnectorPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
-    // Eit «merge»: to kort i ytre kolonne -> eitt i indre kolonne.
+    // Et «merge»: to kort i ytre kolonne -> eitt i indre kolonne.
     // [outerEdge] = kanten på ytre kort som vender innover,
     // [innerEdge] = kanten på indre kort som vender utover.
     void merge(double outerEdge, double innerEdge, List<double> outer,
@@ -2445,9 +2445,9 @@ class _ConnectorPainter extends CustomPainter {
     }
 
     for (var r = 1; r < 4; r++) {
-      // Venstre: ytre kolonne r-1 (høgrekant) -> indre kolonne r (venstrekant).
+      // Venstre: ytre kolonne r-1 (høyrekant) -> indre kolonne r (venstrekant).
       merge(_colX(r - 1) + _cardW, _colX(r), lc[r - 1], lc[r]);
-      // Høgre: ytre kolonne 8-(r-1) (venstrekant) -> indre 8-r (høgrekant).
+      // Høyre: ytre kolonne 8-(r-1) (venstrekant) -> indre 8-r (høyrekant).
       merge(_colX(8 - (r - 1)), _colX(8 - r) + _cardW, rc[r - 1], rc[r]);
     }
 
