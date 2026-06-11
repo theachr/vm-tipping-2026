@@ -8,6 +8,736 @@
   },
   "participants": [
     {
+      "name": "André",
+      "medals": {
+        "gold": "Spain",
+        "silver": "Argentina",
+        "bronze": "France"
+      },
+      "predictions": [
+        {
+          "teams": [
+            "Mexico",
+            "South Africa"
+          ],
+          "goals": {
+            "Mexico": 2,
+            "South Africa": 0
+          }
+        },
+        {
+          "teams": [
+            "Czech Republic",
+            "South Korea"
+          ],
+          "goals": {
+            "South Korea": 2,
+            "Czech Republic": 0
+          }
+        },
+        {
+          "teams": [
+            "Bosnia & Herzegovina",
+            "Canada"
+          ],
+          "goals": {
+            "Canada": 2,
+            "Bosnia & Herzegovina": 1
+          }
+        },
+        {
+          "teams": [
+            "Paraguay",
+            "USA"
+          ],
+          "goals": {
+            "USA": 2,
+            "Paraguay": 0
+          }
+        },
+        {
+          "teams": [
+            "Qatar",
+            "Switzerland"
+          ],
+          "goals": {
+            "Qatar": 0,
+            "Switzerland": 2
+          }
+        },
+        {
+          "teams": [
+            "Brazil",
+            "Morocco"
+          ],
+          "goals": {
+            "Brazil": 2,
+            "Morocco": 0
+          }
+        },
+        {
+          "teams": [
+            "Haiti",
+            "Scotland"
+          ],
+          "goals": {
+            "Haiti": 0,
+            "Scotland": 2
+          }
+        },
+        {
+          "teams": [
+            "Australia",
+            "Turkey"
+          ],
+          "goals": {
+            "Australia": 0,
+            "Turkey": 1
+          }
+        },
+        {
+          "teams": [
+            "Curaçao",
+            "Germany"
+          ],
+          "goals": {
+            "Germany": 4,
+            "Curaçao": 0
+          }
+        },
+        {
+          "teams": [
+            "Japan",
+            "Netherlands"
+          ],
+          "goals": {
+            "Netherlands": 2,
+            "Japan": 1
+          }
+        },
+        {
+          "teams": [
+            "Ecuador",
+            "Ivory Coast"
+          ],
+          "goals": {
+            "Ivory Coast": 1,
+            "Ecuador": 2
+          }
+        },
+        {
+          "teams": [
+            "Sweden",
+            "Tunisia"
+          ],
+          "goals": {
+            "Sweden": 2,
+            "Tunisia": 0
+          }
+        },
+        {
+          "teams": [
+            "Cape Verde",
+            "Spain"
+          ],
+          "goals": {
+            "Spain": 3,
+            "Cape Verde": 0
+          }
+        },
+        {
+          "teams": [
+            "Belgium",
+            "Egypt"
+          ],
+          "goals": {
+            "Belgium": 2,
+            "Egypt": 1
+          }
+        },
+        {
+          "teams": [
+            "Saudi Arabia",
+            "Uruguay"
+          ],
+          "goals": {
+            "Saudi Arabia": 0,
+            "Uruguay": 2
+          }
+        },
+        {
+          "teams": [
+            "Iran",
+            "New Zealand"
+          ],
+          "goals": {
+            "Iran": 3,
+            "New Zealand": 0
+          }
+        },
+        {
+          "teams": [
+            "France",
+            "Senegal"
+          ],
+          "goals": {
+            "France": 3,
+            "Senegal": 1
+          }
+        },
+        {
+          "teams": [
+            "Iraq",
+            "Norway"
+          ],
+          "goals": {
+            "Iraq": 0,
+            "Norway": 1
+          }
+        },
+        {
+          "teams": [
+            "Algeria",
+            "Argentina"
+          ],
+          "goals": {
+            "Argentina": 3,
+            "Algeria": 0
+          }
+        },
+        {
+          "teams": [
+            "Austria",
+            "Jordan"
+          ],
+          "goals": {
+            "Austria": 2,
+            "Jordan": 0
+          }
+        },
+        {
+          "teams": [
+            "DR Congo",
+            "Portugal"
+          ],
+          "goals": {
+            "Portugal": 1,
+            "DR Congo": 1
+          }
+        },
+        {
+          "teams": [
+            "Croatia",
+            "England"
+          ],
+          "goals": {
+            "England": 1,
+            "Croatia": 1
+          }
+        },
+        {
+          "teams": [
+            "Ghana",
+            "Panama"
+          ],
+          "goals": {
+            "Ghana": 2,
+            "Panama": 0
+          }
+        },
+        {
+          "teams": [
+            "Colombia",
+            "Uzbekistan"
+          ],
+          "goals": {
+            "Uzbekistan": 0,
+            "Colombia": 2
+          }
+        },
+        {
+          "teams": [
+            "Czech Republic",
+            "South Africa"
+          ],
+          "goals": {
+            "Czech Republic": 2,
+            "South Africa": 0
+          }
+        },
+        {
+          "teams": [
+            "Bosnia & Herzegovina",
+            "Switzerland"
+          ],
+          "goals": {
+            "Switzerland": 1,
+            "Bosnia & Herzegovina": 0
+          }
+        },
+        {
+          "teams": [
+            "Canada",
+            "Qatar"
+          ],
+          "goals": {
+            "Canada": 3,
+            "Qatar": 1
+          }
+        },
+        {
+          "teams": [
+            "Mexico",
+            "South Korea"
+          ],
+          "goals": {
+            "Mexico": 2,
+            "South Korea": 2
+          }
+        },
+        {
+          "teams": [
+            "Australia",
+            "USA"
+          ],
+          "goals": {
+            "USA": 1,
+            "Australia": 0
+          }
+        },
+        {
+          "teams": [
+            "Morocco",
+            "Scotland"
+          ],
+          "goals": {
+            "Scotland": 1,
+            "Morocco": 3
+          }
+        },
+        {
+          "teams": [
+            "Brazil",
+            "Haiti"
+          ],
+          "goals": {
+            "Brazil": 4,
+            "Haiti": 0
+          }
+        },
+        {
+          "teams": [
+            "Paraguay",
+            "Turkey"
+          ],
+          "goals": {
+            "Turkey": 2,
+            "Paraguay": 0
+          }
+        },
+        {
+          "teams": [
+            "Netherlands",
+            "Sweden"
+          ],
+          "goals": {
+            "Netherlands": 4,
+            "Sweden": 1
+          }
+        },
+        {
+          "teams": [
+            "Germany",
+            "Ivory Coast"
+          ],
+          "goals": {
+            "Germany": 3,
+            "Ivory Coast": 0
+          }
+        },
+        {
+          "teams": [
+            "Curaçao",
+            "Ecuador"
+          ],
+          "goals": {
+            "Ecuador": 3,
+            "Curaçao": 0
+          }
+        },
+        {
+          "teams": [
+            "Japan",
+            "Tunisia"
+          ],
+          "goals": {
+            "Tunisia": 0,
+            "Japan": 2
+          }
+        },
+        {
+          "teams": [
+            "Saudi Arabia",
+            "Spain"
+          ],
+          "goals": {
+            "Spain": 5,
+            "Saudi Arabia": 1
+          }
+        },
+        {
+          "teams": [
+            "Belgium",
+            "Iran"
+          ],
+          "goals": {
+            "Belgium": 3,
+            "Iran": 1
+          }
+        },
+        {
+          "teams": [
+            "Cape Verde",
+            "Uruguay"
+          ],
+          "goals": {
+            "Uruguay": 2,
+            "Cape Verde": 0
+          }
+        },
+        {
+          "teams": [
+            "Egypt",
+            "New Zealand"
+          ],
+          "goals": {
+            "New Zealand": 0,
+            "Egypt": 1
+          }
+        },
+        {
+          "teams": [
+            "Argentina",
+            "Austria"
+          ],
+          "goals": {
+            "Argentina": 2,
+            "Austria": 1
+          }
+        },
+        {
+          "teams": [
+            "France",
+            "Iraq"
+          ],
+          "goals": {
+            "France": 3,
+            "Iraq": 1
+          }
+        },
+        {
+          "teams": [
+            "Norway",
+            "Senegal"
+          ],
+          "goals": {
+            "Norway": 3,
+            "Senegal": 2
+          }
+        },
+        {
+          "teams": [
+            "Algeria",
+            "Jordan"
+          ],
+          "goals": {
+            "Jordan": 0,
+            "Algeria": 1
+          }
+        },
+        {
+          "teams": [
+            "Portugal",
+            "Uzbekistan"
+          ],
+          "goals": {
+            "Portugal": 2,
+            "Uzbekistan": 0
+          }
+        },
+        {
+          "teams": [
+            "England",
+            "Ghana"
+          ],
+          "goals": {
+            "England": 3,
+            "Ghana": 0
+          }
+        },
+        {
+          "teams": [
+            "Croatia",
+            "Panama"
+          ],
+          "goals": {
+            "Panama": 1,
+            "Croatia": 3
+          }
+        },
+        {
+          "teams": [
+            "Colombia",
+            "DR Congo"
+          ],
+          "goals": {
+            "Colombia": 2,
+            "DR Congo": 1
+          }
+        },
+        {
+          "teams": [
+            "Canada",
+            "Switzerland"
+          ],
+          "goals": {
+            "Switzerland": 2,
+            "Canada": 1
+          }
+        },
+        {
+          "teams": [
+            "Bosnia & Herzegovina",
+            "Qatar"
+          ],
+          "goals": {
+            "Bosnia & Herzegovina": 2,
+            "Qatar": 0
+          }
+        },
+        {
+          "teams": [
+            "Brazil",
+            "Scotland"
+          ],
+          "goals": {
+            "Scotland": 0,
+            "Brazil": 3
+          }
+        },
+        {
+          "teams": [
+            "Haiti",
+            "Morocco"
+          ],
+          "goals": {
+            "Morocco": 3,
+            "Haiti": 0
+          }
+        },
+        {
+          "teams": [
+            "Czech Republic",
+            "Mexico"
+          ],
+          "goals": {
+            "Mexico": 2,
+            "Czech Republic": 1
+          }
+        },
+        {
+          "teams": [
+            "South Africa",
+            "South Korea"
+          ],
+          "goals": {
+            "South Africa": 1,
+            "South Korea": 2
+          }
+        },
+        {
+          "teams": [
+            "Curaçao",
+            "Ivory Coast"
+          ],
+          "goals": {
+            "Curaçao": 0,
+            "Ivory Coast": 2
+          }
+        },
+        {
+          "teams": [
+            "Ecuador",
+            "Germany"
+          ],
+          "goals": {
+            "Ecuador": 2,
+            "Germany": 1
+          }
+        },
+        {
+          "teams": [
+            "Netherlands",
+            "Tunisia"
+          ],
+          "goals": {
+            "Tunisia": 0,
+            "Netherlands": 2
+          }
+        },
+        {
+          "teams": [
+            "Japan",
+            "Sweden"
+          ],
+          "goals": {
+            "Japan": 2,
+            "Sweden": 1
+          }
+        },
+        {
+          "teams": [
+            "Turkey",
+            "USA"
+          ],
+          "goals": {
+            "Turkey": 1,
+            "USA": 2
+          }
+        },
+        {
+          "teams": [
+            "Australia",
+            "Paraguay"
+          ],
+          "goals": {
+            "Paraguay": 1,
+            "Australia": 0
+          }
+        },
+        {
+          "teams": [
+            "France",
+            "Norway"
+          ],
+          "goals": {
+            "Norway": 2,
+            "France": 4
+          }
+        },
+        {
+          "teams": [
+            "Iraq",
+            "Senegal"
+          ],
+          "goals": {
+            "Senegal": 3,
+            "Iraq": 1
+          }
+        },
+        {
+          "teams": [
+            "Cape Verde",
+            "Saudi Arabia"
+          ],
+          "goals": {
+            "Cape Verde": 1,
+            "Saudi Arabia": 2
+          }
+        },
+        {
+          "teams": [
+            "Spain",
+            "Uruguay"
+          ],
+          "goals": {
+            "Uruguay": 0,
+            "Spain": 3
+          }
+        },
+        {
+          "teams": [
+            "Egypt",
+            "Iran"
+          ],
+          "goals": {
+            "Egypt": 1,
+            "Iran": 1
+          }
+        },
+        {
+          "teams": [
+            "Belgium",
+            "New Zealand"
+          ],
+          "goals": {
+            "New Zealand": 0,
+            "Belgium": 4
+          }
+        },
+        {
+          "teams": [
+            "England",
+            "Panama"
+          ],
+          "goals": {
+            "Panama": 0,
+            "England": 2
+          }
+        },
+        {
+          "teams": [
+            "Croatia",
+            "Ghana"
+          ],
+          "goals": {
+            "Croatia": 2,
+            "Ghana": 0
+          }
+        },
+        {
+          "teams": [
+            "Colombia",
+            "Portugal"
+          ],
+          "goals": {
+            "Colombia": 2,
+            "Portugal": 1
+          }
+        },
+        {
+          "teams": [
+            "DR Congo",
+            "Uzbekistan"
+          ],
+          "goals": {
+            "DR Congo": 2,
+            "Uzbekistan": 2
+          }
+        },
+        {
+          "teams": [
+            "Algeria",
+            "Austria"
+          ],
+          "goals": {
+            "Algeria": 2,
+            "Austria": 3
+          }
+        },
+        {
+          "teams": [
+            "Argentina",
+            "Jordan"
+          ],
+          "goals": {
+            "Jordan": 1,
+            "Argentina": 4
+          }
+        }
+      ]
+    },
+    {
       "name": "Britt Heidi",
       "medals": {
         "gold": "Spain",
