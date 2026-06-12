@@ -627,6 +627,21 @@ class GroupStageView extends StatelessWidget {
   }
 }
 
+/// Intern visningsnamn -> namn i den offisielle lista (for å vise off. plassering).
+const _internalToOfficial = {
+  'Thea': 'Thea Christianslund',
+  'Svein Egil': 'Svein Egil Christianslund',
+  'Britt Heidi': 'Britt Heidi Christianslund',
+  'Simen og Lina': 'Simen Roseth',
+  'Kenneth': 'Kenneth Roseth',
+  'Mikal': 'Mikal West',
+  'Jamal': 'Jamal Al Abdi',
+  'Liv Marit': 'Liv Marit Brakstad',
+  'Elisabeth': 'Elisabeth Laasby',
+  'Sindre': 'Sindre Steinsvik',
+  'Steinar': 'Steinar Christensen',
+};
+
 /// Namn i den offisielle lista som er «våre» (intern-poolen) – berre for utheving.
 const _ourOfficialNames = {
   'Thea Christianslund',
@@ -1400,6 +1415,7 @@ class _HomePageState extends State<HomePage> {
   Widget _scoreboard(List<Standing> standings) {
     final scheme = Theme.of(context).colorScheme;
     final pride = kThemes[themeIndex.value].rainbow;
+    final officialRank = _officialRanks();
 
     // Pride: kvit tekst med skugge så han les på alle regnbogefargane.
     // Elles: vanleg primærfarge.
@@ -1440,14 +1456,28 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         for (var i = 0; i < standings.length; i++)
-          _standingTile(standings[i], i + 1),
+          _standingTile(standings[i], i + 1, officialRank),
         const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _standingTile(Standing s, int rank) {
+  /// Offisiell plassering per offisielt namn (rangert som Offisiell-fana).
+  Map<String, int> _officialRanks() {
+    if (_official.isEmpty) return const {};
+    final st = _official.map((p) => standingFor(p, _matches, _ovr!)).toList()
+      ..sort((a, b) {
+        final c = b.total.compareTo(a.total);
+        return c != 0 ? c : a.p.name.compareTo(b.p.name);
+      });
+    return {for (var i = 0; i < st.length; i++) st[i].p.name: i + 1};
+  }
+
+  Widget _standingTile(Standing s, int rank, Map<String, int> officialRank) {
     final temp = liveTempTotal(s.p, _matches, _live);
+    final offName = _internalToOfficial[s.p.name];
+    final offRank = offName != null ? officialRank[offName] : null;
+    final scheme = Theme.of(context).colorScheme;
     final medalColor = switch (rank) {
       1 => const Color(0xFFFFC107),
       2 => const Color(0xFFB0BEC5),
@@ -1461,8 +1491,34 @@ class _HomePageState extends State<HomePage> {
         child: Text('$rank',
             style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
-      title: Text(s.p.name,
-          style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(s.p.name,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          if (offRank != null) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Plass i offisiell konkurranse (av ${officialRank.length})',
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('💰 #$offRank',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary)),
+              ),
+            ),
+          ],
+        ],
+      ),
       subtitle: Text('Gruppe: ${s.group} · Medaljer: ${s.medal} · ${s.played} kamper talt'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
