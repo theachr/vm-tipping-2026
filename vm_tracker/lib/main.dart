@@ -42,7 +42,7 @@ const kPrideColors = <Color>[
 
 const kThemes = <AppTheme>[
   AppTheme('Rosa natt', Color(0xFFE91E8C), Brightness.dark),
-  AppTheme('Stadiongrønnn', Color(0xFF2E7D32), Brightness.dark),
+  AppTheme('Stadiongrønn', Color(0xFF2E7D32), Brightness.dark),
   AppTheme('Kveldsnavy', Color(0xFF5C7CFA), Brightness.dark),
   AppTheme('Gull & svart', Color(0xFFFFB300), Brightness.dark),
   AppTheme('Pride natt', Color(0xFF9C27B0), Brightness.dark, rainbow: true),
@@ -242,7 +242,7 @@ Color advColor(Advance a) {
     case Advance.direct:
       return Colors.green;
     case Advance.thirdIn:
-      return const Color(0xFF8BC34A); // lysegrønnn
+      return const Color(0xFF8BC34A); // lysegrønn
     case Advance.thirdOut:
       return const Color(0xFFF5A623); // oransje
     case Advance.out:
@@ -558,30 +558,53 @@ class _KnockoutViewState extends State<KnockoutView> {
 class GroupStageView extends StatelessWidget {
   final List<MatchInfo> matches;
   final Overrides overrides;
+  final Map<int, LiveInfo> live;
   const GroupStageView(
-      {super.key, required this.matches, required this.overrides});
+      {super.key,
+      required this.matches,
+      required this.overrides,
+      this.live = const {}});
 
   @override
   Widget build(BuildContext context) {
-    final tables = groupTables(_resultScore(overrides), matches);
+    // Live-bevisst: tabellen rører seg medan kamper pågår.
+    final tables = groupTables(_liveAwareScore(overrides, live), matches);
     final keys = tables.keys.toList()..sort();
-    // Tal spilt gruppekamper per gruppe (for å avgjere om status er meiningsfull).
+    final anyLive = matches.any((m) =>
+        m.isGroup && (live[m.num]?.inPlay ?? false));
+    // Tal kamper med resultat (ferdig ELLER live) per gruppe – styrer status.
+    final score = _liveAwareScore(overrides, live);
     final playedByGroup = <String, int>{};
     for (final m in matches.where((m) => m.isGroup)) {
-      if (actualResult(m, overrides) != null) {
+      if (score(m) != null) {
         playedByGroup[m.group] = (playedByGroup[m.group] ?? 0) + 1;
       }
     }
     return ListView(
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
-          child: Text(
-            'Gruppetabeller ut fra faktiske resultat. Fyller seg etter hvert '
-            'som kampene blir spilt. Grøn = 1./2.plass (direkte videre), '
-            'lysegrønnn = 3.plass blant de 8 beste, oransje = 3.plass utenfor, '
-            'rød = ute.',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Row(
+            children: [
+              if (anyLive) ...[
+                const _PulsingDot(size: 8),
+                const SizedBox(width: 6),
+                const Text('LIVE',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red)),
+                const SizedBox(width: 8),
+              ],
+              const Expanded(
+                child: Text(
+                  'Gruppetabeller som oppdaterer seg live. Grønn = 1./2.plass '
+                  '(direkte videre), lysegrønn = 3.plass blant de 8 beste, '
+                  'oransje = 3.plass utenfor, rød = ute.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+            ],
           ),
         ),
         for (final g in keys) ...[
@@ -618,6 +641,19 @@ ScoreFor _tipsScore(Participant p) => (m) => p.forMatch(m.team1, m.team2);
 ScoreFor _resultScore(Overrides ovr) => (m) {
       final a = actualResult(m, ovr);
       return a == null ? null : {m.team1: a[0], m.team2: a[1]};
+    };
+
+/// Som [_resultScore], men tar òg med live-stillinga for kamper som pågår.
+/// Brukast til gruppetabellar så dei rører seg LIVE (poeng tel framleis berre
+/// på ferdige resultat – det går via actualResult/standingFor).
+ScoreFor _liveAwareScore(Overrides ovr, Map<int, LiveInfo> live) => (m) {
+      final a = actualResult(m, ovr);
+      if (a != null) return {m.team1: a[0], m.team2: a[1]};
+      final li = live[m.num];
+      if (li != null && li.inPlay && li.s1 != null && li.s2 != null) {
+        return {m.team1: li.s1!, m.team2: li.s2!};
+      }
+      return null;
     };
 
 /// Lag som er slått ut i verkelegheita: taperar av spilt sluttspillkamper, og
@@ -890,7 +926,7 @@ class _HomePageState extends State<HomePage> {
       await _applyLive();
       _liveTimer?.cancel();
       _liveTimer =
-          Timer.periodic(const Duration(seconds: 60), (_) => _applyLive());
+          Timer.periodic(const Duration(seconds: 30), (_) => _applyLive());
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -909,44 +945,87 @@ class _HomePageState extends State<HomePage> {
     await prefs.setStringList(_hiddenPrefKey, hidden.toList());
   }
 
-  /// Dialog med avkryssing for hver deltaker.
+  /// Deltakarar gruppert i lag (Chræs / Andre / IT). IT = alle andre.
+  Map<String, List<Participant>> _participantGroups() {
+    const chras = {'Britt Heidi', 'Svein Egil', 'Simen og Lina', 'Thea'};
+    const andre = {'Liv Marit', 'Kenneth', 'Maja Emilie'};
+    final out = <String, List<Participant>>{'Chræs': [], 'Andre': [], 'IT': []};
+    for (final p in _participants) {
+      if (chras.contains(p.name)) {
+        out['Chræs']!.add(p);
+      } else if (andre.contains(p.name)) {
+        out['Andre']!.add(p);
+      } else {
+        out['IT']!.add(p);
+      }
+    }
+    out.removeWhere((k, v) => v.isEmpty);
+    return out;
+  }
+
+  /// Dialog med avkryssing, gruppert i lag, scrollbar.
   void _openFilter() {
+    final groups = _participantGroups();
     showDialog<void>(
       context: context,
       builder: (ctx) {
-        // Lokal kopi som vi redigerer i dialogen.
         final hidden = {..._hidden};
         return StatefulBuilder(
           builder: (ctx, setLocal) {
+            Widget groupSection(String name, List<Participant> members) {
+              final visibleCount =
+                  members.where((p) => !hidden.contains(p.name)).length;
+              final all = visibleCount == members.length;
+              final none = visibleCount == 0;
+              return ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                childrenPadding: const EdgeInsets.only(left: 12),
+                leading: Checkbox(
+                  tristate: true,
+                  value: all ? true : (none ? false : null),
+                  onChanged: (_) => setLocal(() {
+                    if (all) {
+                      hidden.addAll(members.map((p) => p.name)); // skjul alle
+                    } else {
+                      hidden.removeAll(members.map((p) => p.name)); // vis alle
+                    }
+                  }),
+                ),
+                title: Text('$name ($visibleCount/${members.length})',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                children: [
+                  for (final p in members)
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.only(left: 8, right: 0),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: Text(p.name),
+                      value: !hidden.contains(p.name),
+                      onChanged: (v) => setLocal(() {
+                        if (v == true) {
+                          hidden.remove(p.name);
+                        } else {
+                          hidden.add(p.name);
+                        }
+                      }),
+                    ),
+                ],
+              );
+            }
+
             return AlertDialog(
               title: const Text('Vis deltakere'),
               content: SizedBox(
-                width: 320,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                width: 340,
+                height: 420,
+                child: ListView(
                   children: [
-                    for (final p in _participants)
-                      CheckboxListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(p.name),
-                        value: !hidden.contains(p.name),
-                        onChanged: (v) => setLocal(() {
-                          if (v == true) {
-                            hidden.remove(p.name);
-                          } else {
-                            hidden.add(p.name);
-                          }
-                        }),
-                      ),
+                    for (final e in groups.entries)
+                      groupSection(e.key, e.value),
                     const Divider(),
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: () => setLocal(hidden.clear),
-                          child: const Text('Vis alle'),
-                        ),
-                      ],
+                    TextButton(
+                      onPressed: () => setLocal(hidden.clear),
+                      child: const Text('Vis alle'),
                     ),
                   ],
                 ),
@@ -1086,7 +1165,8 @@ class _HomePageState extends State<HomePage> {
           final content = _navIndex == 0
               ? _scoreboard(standings)
               : _navIndex == 1
-                  ? GroupStageView(matches: _matches, overrides: _ovr!)
+                  ? GroupStageView(
+                      matches: _matches, overrides: _ovr!, live: _live)
                   : _navIndex == 2
                       ? UpcomingMatchesView(
                           matches: _matches,
@@ -1278,6 +1358,7 @@ class _HomePageState extends State<HomePage> {
               participant: s.p,
               matches: _matches,
               overrides: _ovr!,
+              live: _live,
             ),
           ),
         );
@@ -1621,13 +1702,14 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     );
   }
 
-  /// Gruppetabell (faktiske resultat) for gruppa kampen høyrer til.
+  /// Gruppetabell (live-bevisst) for gruppa kampen høyrer til.
   List<Widget> _groupTableSection(MatchInfo m) {
-    final tables = groupTables(_resultScore(widget.overrides), widget.matches);
+    final score = _liveAwareScore(widget.overrides, widget.live);
+    final tables = groupTables(score, widget.matches);
     final rows = tables[m.group];
     if (rows == null) return const [];
     final played = widget.matches
-        .where((x) => x.group == m.group && actualResult(x, widget.overrides) != null)
+        .where((x) => x.group == m.group && score(x) != null)
         .length;
     return [
       Padding(
@@ -1711,11 +1793,13 @@ class ParticipantPage extends StatefulWidget {
   final Participant participant;
   final List<MatchInfo> matches;
   final Overrides overrides;
+  final Map<int, LiveInfo> live;
   const ParticipantPage({
     super.key,
     required this.participant,
     required this.matches,
     required this.overrides,
+    this.live = const {},
   });
   @override
   State<ParticipantPage> createState() => _ParticipantPageState();
@@ -1869,14 +1953,15 @@ class _ParticipantPageState extends State<ParticipantPage> {
       groups.putIfAbsent(m.group, () => []).add(m);
     }
     final keys = groups.keys.toList()..sort();
-    // Resultat-modus: faktiske resultat (felles). Projeksjon: dine tips.
+    // Resultat-modus: faktiske resultat (live-bevisst). Projeksjon: dine tips.
+    final resultScore = _liveAwareScore(_ovr, widget.live);
     final tables = _groupResults
-        ? groupTables(_resultScore(_ovr), _matches)
+        ? groupTables(resultScore, _matches)
         : groupTables(_tipsScore(_p), _matches);
-    // Tal spilt gruppekamper per gruppe (for status-fargen i Resultat-modus).
+    // Tal kamper med resultat (ferdig/live) per gruppe (for status-fargen).
     final playedByGroup = <String, int>{};
     for (final m in _matches.where((m) => m.isGroup)) {
-      if (actualResult(m, _ovr) != null) {
+      if (resultScore(m) != null) {
         playedByGroup[m.group] = (playedByGroup[m.group] ?? 0) + 1;
       }
     }
