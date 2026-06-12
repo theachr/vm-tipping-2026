@@ -755,7 +755,7 @@ class _OfficialViewState extends State<OfficialView> {
                         fontWeight:
                             ours ? FontWeight.bold : FontWeight.w500),
                   ),
-                  subtitle: Text('Gruppe: ${s.group} · Medaljer: ${s.medal}'),
+                  subtitle: Text('Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal}'),
                   trailing: Text('${s.total} p',
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold)),
@@ -1520,7 +1520,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ],
       ),
-      subtitle: Text('Gruppe: ${s.group} · Medaljer: ${s.medal} · ${s.played} kamper talt'),
+      subtitle: Text('Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal} · ${s.played} kamper talt'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
