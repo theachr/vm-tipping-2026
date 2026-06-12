@@ -1321,6 +1321,7 @@ class _HomePageState extends State<HomePage> {
                           participants: _visible,
                           overrides: _ovr!,
                           live: _live,
+                          official: _official,
                         )
                       : _navIndex == 3
                           ? KnockoutView(matches: _matches, overrides: _ovr!)
@@ -1677,12 +1678,14 @@ class UpcomingMatchesView extends StatefulWidget {
   final List<Participant> participants;
   final Overrides overrides;
   final Map<int, LiveInfo> live;
+  final List<Participant> official;
   const UpcomingMatchesView({
     super.key,
     required this.matches,
     required this.participants,
     required this.overrides,
     this.live = const {},
+    this.official = const [],
   });
 
   @override
@@ -1888,6 +1891,7 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
         trailing: trailing,
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
         children: [
+          if (m.isGroup) ..._consensusRow(m),
           if (m.isGroup) ..._groupTableSection(m),
           if (tippers.isEmpty)
             Padding(
@@ -1927,6 +1931,56 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
       ),
       GroupTableCard(rows: rows, showStatus: played > 0),
       const SizedBox(height: 6),
+    ];
+  }
+
+  /// «Mest tippa»-rad: dei 3 vanlegaste resultata blant alle offisielle tips.
+  List<Widget> _consensusRow(MatchInfo m) {
+    if (widget.official.isEmpty) return const [];
+    final counts = <String, int>{};
+    var total = 0;
+    for (final p in widget.official) {
+      final pred = p.forMatch(m.team1, m.team2);
+      if (pred == null) continue;
+      final key = '${pred[m.team1]}–${pred[m.team2]}';
+      counts[key] = (counts[key] ?? 0) + 1;
+      total++;
+    }
+    if (total == 0) return const [];
+    final top = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final scheme = Theme.of(context).colorScheme;
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 6),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text('💰 Mest tippa',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.primary)),
+            for (final e in top.take(3))
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${e.key}  ${(e.value * 100 / total).round()}%',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            Text('av $total', style: TextStyle(fontSize: 11, color: scheme.outline)),
+          ],
+        ),
+      ),
     ];
   }
 
