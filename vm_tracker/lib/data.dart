@@ -47,13 +47,20 @@ class Participant {
     );
   }
 
-  static Future<List<Participant>> loadAll() async {
-    final raw = await rootBundle.loadString('assets/data/predictions.json');
+  static Future<List<Participant>> _loadFrom(String asset) async {
+    final raw = await rootBundle.loadString(asset);
     final j = jsonDecode(raw) as Map<String, dynamic>;
     return (j['participants'] as List)
         .map((e) => Participant.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  static Future<List<Participant>> loadAll() =>
+      _loadFrom('assets/data/predictions.json');
+
+  /// Den offisielle konkurransen (alle påmeldte, frå PDF-en).
+  static Future<List<Participant>> loadOfficial() =>
+      _loadFrom('assets/data/official.json');
 }
 
 Future<List<MatchInfo>> fetchMatches() async {

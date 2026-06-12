@@ -627,6 +627,133 @@ class GroupStageView extends StatelessWidget {
   }
 }
 
+/// Namn i den offisielle lista som er «våre» (intern-poolen) – berre for utheving.
+const _ourOfficialNames = {
+  'Thea Christianslund',
+  'Svein Egil Christianslund',
+  'Britt Heidi Christianslund',
+  'Simen Roseth',
+  'Kenneth Roseth',
+  'Mikal West',
+  'Jamal Al Abdi',
+  'Liv Marit Brakstad',
+  'Elisabeth Laasby',
+  'Sindre Steinsvik',
+  'Steinar Christensen',
+};
+
+/// Toppnivå-fane: enkel rangert tabell for den offisielle konkurransen.
+class OfficialView extends StatefulWidget {
+  final List<Participant> official;
+  final List<MatchInfo> matches;
+  final Overrides overrides;
+  const OfficialView(
+      {super.key,
+      required this.official,
+      required this.matches,
+      required this.overrides});
+
+  @override
+  State<OfficialView> createState() => _OfficialViewState();
+}
+
+class _OfficialViewState extends State<OfficialView> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (widget.official.isEmpty) {
+      return const Center(child: Text('Inga offisiell liste lasta.'));
+    }
+    // Global rangering på total poeng (tiebreak: namn).
+    final standings = widget.official
+        .map((p) => standingFor(p, widget.matches, widget.overrides))
+        .toList()
+      ..sort((a, b) {
+        final c = b.total.compareTo(a.total);
+        return c != 0 ? c : a.p.name.compareTo(b.p.name);
+      });
+    final q = _query.trim().toLowerCase();
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Offisiell konkurranse · ${standings.length} deltakere',
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 2),
+              Text(
+                'Rangert på poeng (gruppe + medaljer). Fyller seg etter hvert '
+                'som resultatene kommer. Dine egne er uthevet.',
+                style: TextStyle(fontSize: 12, color: scheme.outline),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.search, size: 18),
+                  hintText: 'Søk etter navn …',
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: standings.length,
+            itemBuilder: (_, i) {
+              final s = standings[i];
+              final rank = i + 1;
+              if (q.isNotEmpty && !s.p.name.toLowerCase().contains(q)) {
+                return const SizedBox.shrink();
+              }
+              final ours = _ourOfficialNames.contains(s.p.name);
+              final rankColor = switch (rank) {
+                1 => const Color(0xFFFFC107),
+                2 => const Color(0xFFB0BEC5),
+                3 => const Color(0xFFCD7F32),
+                4 || 5 => scheme.primary,
+                _ => scheme.surfaceContainerHighest,
+              };
+              return Container(
+                color: ours ? scheme.primary.withValues(alpha: 0.10) : null,
+                child: ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: rankColor,
+                    child: Text('$rank',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: rank <= 5 ? Colors.white : scheme.onSurface)),
+                  ),
+                  title: Text(
+                    s.p.name,
+                    style: TextStyle(
+                        fontWeight:
+                            ours ? FontWeight.bold : FontWeight.w500),
+                  ),
+                  subtitle: Text('Gruppe: ${s.group} · Medaljer: ${s.medal}'),
+                  trailing: Text('${s.total} p',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ---- Medalje-trafikklys --------------------------------------------------
 // Vurderer om et medaljetips fortsatt er oppnåeleg.
 enum MedalFeas { ok, caution, impossible, achieved }
@@ -832,6 +959,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Participant> _participants = [];
+  List<Participant> _official = [];
   Overrides? _ovr;
   List<MatchInfo> _raw = []; // openfootball (uendra)
   List<MatchInfo> _matches = []; // med live sluttresultat fletta inn
@@ -909,12 +1037,17 @@ class _HomePageState extends State<HomePage> {
     });
     try {
       final participants = await Participant.loadAll();
+      List<Participant> official = [];
+      try {
+        official = await Participant.loadOfficial();
+      } catch (_) {/* offisiell liste er valfri */}
       final ovr = await Overrides.load();
       final matches = await fetchMatches();
       final prefs = await SharedPreferences.getInstance();
       final hidden = prefs.getStringList(_hiddenPrefKey)?.toSet() ?? <String>{};
       setState(() {
         _participants = participants;
+        _official = official;
         _ovr = ovr;
         _raw = matches;
         _matches = matches;
@@ -1174,7 +1307,13 @@ class _HomePageState extends State<HomePage> {
                           overrides: _ovr!,
                           live: _live,
                         )
-                      : KnockoutView(matches: _matches, overrides: _ovr!);
+                      : _navIndex == 3
+                          ? KnockoutView(matches: _matches, overrides: _ovr!)
+                          : OfficialView(
+                              official: _official,
+                              matches: _matches,
+                              overrides: _ovr!,
+                            );
 
           // Smal skjerm (mobil): innhald i full breidde, meny kjem
           // som botnmeny under (se bottomNavigationBar).
@@ -1209,6 +1348,11 @@ class _HomePageState extends State<HomePage> {
                     selectedIcon: Icon(Icons.account_tree),
                     label: Text('Sluttspill'),
                   ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.public_outlined),
+                    selectedIcon: Icon(Icons.public),
+                    label: Text('Offisiell'),
+                  ),
                 ],
               ),
               const VerticalDivider(width: 1),
@@ -1241,6 +1385,11 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.account_tree_outlined),
                   selectedIcon: Icon(Icons.account_tree),
                   label: 'Sluttspill',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.public_outlined),
+                  selectedIcon: Icon(Icons.public),
+                  label: 'Offisiell',
                 ),
               ],
             )
