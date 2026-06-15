@@ -1100,7 +1100,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       await _applyLive();
       _liveTimer?.cancel();
       _liveTimer =
-          Timer.periodic(const Duration(seconds: 20), (_) => _applyLive());
+          Timer.periodic(const Duration(seconds: 10), (_) => _applyLive());
     } catch (e) {
       setState(() {
         _error = e.toString();
