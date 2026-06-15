@@ -986,7 +986,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // Mål-pling.
   final AudioPlayer _player = AudioPlayer();
   bool _soundOn = true;
+  bool _audioPrimed = false; // nettlesaren krev éi interaksjon før lyd
   static const _soundPrefKey = 'goal_sound';
+
+  /// Låser opp lyd ved første trykk kvar som helst (stille avspeling).
+  void _primeAudio() {
+    if (_audioPrimed) return;
+    _audioPrimed = true;
+    _player.play(AssetSource('sounds/goal.wav'), volume: 0).catchError((_) {});
+  }
 
   /// Navn på deltakere som er skjult i visninga (lagra lokalt).
   Set<String> _hidden = {};
@@ -1056,7 +1064,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (goals.isNotEmpty) {
       if (_soundOn) {
         try {
-          await _player.play(AssetSource('sounds/goal.wav'));
+          await _player.play(AssetSource('sounds/goal.wav'), volume: 1);
         } catch (_) {}
       }
       // Synleg MÅL-banner (sjølv om lyd er blokkert i nettlesaren).
@@ -1272,7 +1280,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return t != 0 ? t : a.p.name.compareTo(b.p.name);
       });
 
-    return Scaffold(
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _primeAudio(),
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('VM Tipping 2026'),
         actions: [
@@ -1329,9 +1340,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               setState(() => _soundOn = !_soundOn);
               final p = await SharedPreferences.getInstance();
               await p.setBool(_soundPrefKey, _soundOn);
+              _audioPrimed = true;
               if (_soundOn) {
                 try {
-                  await _player.play(AssetSource('sounds/goal.wav'));
+                  await _player.play(AssetSource('sounds/goal.wav'), volume: 1);
                 } catch (_) {}
               }
             },
@@ -1446,6 +1458,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ],
             )
           : null,
+      ),
     );
   }
 
