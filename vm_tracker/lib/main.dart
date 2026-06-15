@@ -639,7 +639,7 @@ const _internalToOfficial = {
   'Liv Marit': 'Liv Marit Brakstad',
   'Elisabeth': 'Elisabeth Laasby',
   'Sindre': 'Sindre Steinsvik',
-  'Steinar': 'Steinar Christensen',
+  // 'Steinar' (Vassnes) er ikkje med i den offisielle lista.
 };
 
 /// Namn i den offisielle lista som er «våre» (intern-poolen) – berre for utheving.
@@ -654,7 +654,6 @@ const _ourOfficialNames = {
   'Liv Marit Brakstad',
   'Elisabeth Laasby',
   'Sindre Steinsvik',
-  'Steinar Christensen',
 };
 
 /// Toppnivå-fane: enkel rangert tabell for den offisielle konkurransen.
