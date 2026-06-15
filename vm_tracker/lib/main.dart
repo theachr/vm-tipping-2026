@@ -971,7 +971,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   List<Participant> _participants = [];
   List<Participant> _official = [];
   Overrides? _ovr;
@@ -992,28 +992,43 @@ class _HomePageState extends State<HomePage> {
   Set<String> _hidden = {};
   static const _hiddenPrefKey = 'hidden_participants';
 
+  DateTime? _liveAt; // siste vellukka live-oppdatering
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _liveTimer?.cancel();
     _player.dispose();
     super.dispose();
   }
 
-  /// Sann om noen kamp har fått flere mål enn sist (utløyser pling).
-  bool _goalScored(Map<int, LiveInfo> old, Map<int, LiveInfo> fresh) {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Når appen/fana kjem i forgrunnen igjen: hent live med ein gong.
+    if (state == AppLifecycleState.resumed) _applyLive();
+  }
+
+  /// Mål sidan sist: liste med tekstar som "⚽ Mexico 2–0 Sør-Afrika".
+  List<String> _goalEvents(Map<int, LiveInfo> old, Map<int, LiveInfo> fresh) {
+    final byNum = {for (final m in _raw) m.num: m};
+    final out = <String>[];
     for (final e in fresh.entries) {
       final n = old[e.key], f = e.value;
-      if (n == null || f.s1 == null || f.s2 == null) continue;
-      if (n.s1 == null || n.s2 == null) continue;
-      if ((f.s1! + f.s2!) > (n.s1! + n.s2!)) return true;
+      if (f.s1 == null || f.s2 == null) continue;
+      if (n == null || n.s1 == null || n.s2 == null) continue;
+      if ((f.s1! + f.s2!) > (n.s1! + n.s2!)) {
+        final m = byNum[e.key];
+        if (m != null) out.add('⚽ ${m.team1} ${f.s1}–${f.s2} ${m.team2}');
+      }
     }
-    return false;
+    return out;
   }
 
   /// Hentar live-data og flettar ferdigspilt (post) gruppekamper inn som
@@ -1021,7 +1036,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _applyLive() async {
     if (_raw.isEmpty) return;
     final live = await fetchLive(_raw);
-    final scored = _goalScored(_live, live);
+    final goals = _goalEvents(_live, live);
     final merged = [
       for (final m in _raw)
         (m.isGroup &&
@@ -1036,11 +1051,23 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _live = live;
       _matches = merged;
+      _liveAt = DateTime.now();
     });
-    if (scored && _soundOn) {
-      try {
-        await _player.play(AssetSource('sounds/goal.wav'));
-      } catch (_) {}
+    if (goals.isNotEmpty) {
+      if (_soundOn) {
+        try {
+          await _player.play(AssetSource('sounds/goal.wav'));
+        } catch (_) {}
+      }
+      // Synleg MÅL-banner (sjølv om lyd er blokkert i nettlesaren).
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('MÅL!  ${goals.join('   ·   ')}',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ));
+      }
     }
   }
 
@@ -1073,7 +1100,7 @@ class _HomePageState extends State<HomePage> {
       await _applyLive();
       _liveTimer?.cancel();
       _liveTimer =
-          Timer.periodic(const Duration(seconds: 30), (_) => _applyLive());
+          Timer.periodic(const Duration(seconds: 20), (_) => _applyLive());
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -1286,6 +1313,16 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
+          if (_liveAt != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  'live ${_two(_liveAt!.hour)}:${_two(_liveAt!.minute)}:${_two(_liveAt!.second)}',
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ),
+            ),
           IconButton(
             tooltip: _soundOn ? 'Mål-pling på' : 'Mål-pling av',
             onPressed: () async {
