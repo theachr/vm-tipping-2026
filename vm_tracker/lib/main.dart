@@ -709,8 +709,8 @@ class _OfficialViewState extends State<OfficialView> {
               TextField(
                 decoration: InputDecoration(
                   isDense: true,
-                  prefixIcon: const Icon(Icons.chat_bubble_outline, size: 18),
-                  hintText: 'Spør / søk, t.d. «hva har Olav tippet?»',
+                  prefixIcon: const Icon(Icons.search, size: 18),
+                  hintText: 'Søk etter navn …',
                   border: const OutlineInputBorder(),
                 ),
                 onChanged: (v) => setState(() => _query = v),
@@ -724,7 +724,7 @@ class _OfficialViewState extends State<OfficialView> {
             itemBuilder: (_, i) {
               final s = standings[i];
               final rank = i + 1;
-              if (!_matchesQuery(s.p.name, q)) {
+              if (q.isNotEmpty && !s.p.name.toLowerCase().contains(q)) {
                 return const SizedBox.shrink();
               }
               final ours = _ourOfficialNames.contains(s.p.name);
@@ -781,18 +781,6 @@ class _OfficialViewState extends State<OfficialView> {
         ),
       ],
     );
-  }
-
-  /// Treffer søket/spørsmålet namnet? Handterer både «søk» og «spørsmål»:
-  /// namnet inneheld teksten, ELLER teksten (ei setning) nemner namnet/fornamnet.
-  bool _matchesQuery(String name, String q) {
-    if (q.isEmpty) return true;
-    final n = name.toLowerCase();
-    if (n.contains(q)) return true;
-    if (q.contains(n)) return true;
-    final first = n.split(' ').first;
-    if (first.length >= 3 && q.contains(first)) return true;
-    return false;
   }
 }
 
