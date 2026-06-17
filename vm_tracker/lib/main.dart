@@ -666,11 +666,17 @@ class OfficialView extends StatefulWidget {
   final List<Participant> official;
   final List<MatchInfo> matches;
   final Overrides overrides;
+  final Map<String, double>? winPct;
+  final bool simBusy;
+  final VoidCallback? onCompute;
   const OfficialView(
       {super.key,
       required this.official,
       required this.matches,
-      required this.overrides});
+      required this.overrides,
+      this.winPct,
+      this.simBusy = false,
+      this.onCompute});
 
   @override
   State<OfficialView> createState() => _OfficialViewState();
@@ -719,6 +725,30 @@ class _OfficialViewState extends State<OfficialView> {
                   border: const OutlineInputBorder(),
                 ),
                 onChanged: (v) => setState(() => _query = v),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: widget.simBusy ? null : widget.onCompute,
+                    icon: widget.simBusy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.casino_outlined, size: 18),
+                    label: Text(widget.simBusy
+                        ? 'Reknar …'
+                        : 'Rekn sjanse for 1. plass'),
+                  ),
+                  const SizedBox(width: 10),
+                  if (widget.winPct != null)
+                    Expanded(
+                      child: Text('🏆 vist per person (1000 simuleringar)',
+                          style:
+                              TextStyle(fontSize: 11, color: scheme.outline)),
+                    ),
+                ],
               ),
             ],
           ),
@@ -769,7 +799,8 @@ class _OfficialViewState extends State<OfficialView> {
                         fontWeight:
                             ours ? FontWeight.bold : FontWeight.w500),
                   ),
-                  subtitle: Text('Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal}'),
+                  subtitle: Text('Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal}'
+                      '${widget.winPct != null ? ' · 🏆 ${_fmtPct(widget.winPct![s.p.name] ?? 0)} sjanse' : ''}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1246,7 +1277,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> _runSim() async {
     setState(() => _simBusy = true);
     await Future.delayed(const Duration(milliseconds: 50));
-    final r = simulateWinChances(_participants, _matches, _ovr!, sims: 1000);
+    // Sjanse for 1. plass i HEILE den offisielle konkurransen (143).
+    final pool = _official.isNotEmpty ? _official : _participants;
+    final r = simulateWinChances(pool, _matches, _ovr!, sims: 1000);
     if (!mounted) return;
     setState(() {
       _winPct = r;
@@ -1629,6 +1662,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               official: _official,
                               matches: _matches,
                               overrides: _ovr!,
+                              winPct: _winPct,
+                              simBusy: _simBusy,
+                              onCompute: _runSim,
                             );
 
           // Smal skjerm (mobil): innhald i full breidde, meny kjem
@@ -1775,7 +1811,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               if (_winPct != null)
                 Expanded(
                   child: Text(
-                    'Sjanse for 1. plass (1000 simuleringar av resten).',
+                    'Sjanse for 1. plass i heile den offisielle konkurransen '
+                    '(${_winPct!.length} stk, 1000 simuleringar).',
                     style: TextStyle(fontSize: 11, color: scheme.outline),
                   ),
                 ),
@@ -1848,7 +1885,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
       subtitle: Text(
           'Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal}'
-          '${_winPct != null ? ' · 🏆 ${_fmtPct(_winPct![s.p.name] ?? 0)} sjanse' : ''}'),
+          '${_winPct != null && offName != null && _winPct!.containsKey(offName) ? ' · 🏆 ${_fmtPct(_winPct![offName] ?? 0)} sjanse' : ''}'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
