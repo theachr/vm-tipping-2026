@@ -641,6 +641,7 @@ const _internalToOfficial = {
   'Elisabeth': 'Elisabeth Laasby',
   'Sindre': 'Sindre Steinsvik',
   'Erlend': 'Erlend Hollund',
+  'Maja Emilie': 'Maja Hermansen',
   // 'Steinar' (Vassnes) er ikkje med i den offisielle lista.
 };
 
@@ -657,6 +658,7 @@ const _ourOfficialNames = {
   'Elisabeth Laasby',
   'Sindre Steinsvik',
   'Erlend Hollund',
+  'Maja Hermansen',
 };
 
 /// Toppnivå-fane: enkel rangert tabell for den offisielle konkurransen.
