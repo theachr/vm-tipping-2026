@@ -798,11 +798,11 @@ class OfficialTipsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final upcoming = matches
-        .where((m) => m.isGroup && actualResult(m, overrides) == null)
-        .toList()
+    // Alle gruppekamper, kronologisk (spilte først, så komande).
+    final groupMatches = matches.where((m) => m.isGroup).toList()
       ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
+    final upcoming =
+        groupMatches.where((m) => actualResult(m, overrides) == null).toList();
 
     Widget medalChip(String emoji, String? team) => Expanded(
           child: Column(
@@ -840,39 +840,59 @@ class OfficialTipsPage extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: Text(
-              'Tips – komande kamper (${upcoming.length})',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (upcoming.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Ingen komande gruppekamper.',
-                  style: TextStyle(color: scheme.outline)),
-            ),
-          for (final m in upcoming)
-            Builder(builder: (_) {
-              final pred = p.forMatch(m.team1, m.team2);
-              final tip =
-                  pred == null ? '–' : '${pred[m.team1]}–${pred[m.team2]}';
-              return ListTile(
-                dense: true,
-                title: Text(
-                    '${flagFor(m.team1)} ${m.team1}  –  ${flagFor(m.team2)} ${m.team2}'),
-                subtitle: Text(
-                    '${_prettyDate(_osloDateIso(m))} ${_osloTime(m)} · '
-                    '${m.group.replaceFirst('Group', 'Gruppe')}'),
-                trailing: Text(tip,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-              );
-            }),
+          // Komande kamper først (det folk er mest interesserte i).
+          if (upcoming.isNotEmpty)
+            _tipSectionHeader('Komande kamper (${upcoming.length})'),
+          for (final m in upcoming) _officialTipTile(m),
+          // Så dei spilte (eldst nederst).
+          Builder(builder: (_) {
+            final played = groupMatches
+                .where((m) => actualResult(m, overrides) != null)
+                .toList()
+                .reversed
+                .toList();
+            if (played.isEmpty) return const SizedBox.shrink();
+            return Column(
+              children: [
+                _tipSectionHeader('Tidlegare kamper (${played.length})'),
+                for (final m in played) _officialTipTile(m),
+              ],
+            );
+          }),
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _tipSectionHeader(String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        child: Text(text,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      );
+
+  Widget _officialTipTile(MatchInfo m) {
+    final pred = p.forMatch(m.team1, m.team2);
+    final tip = pred == null ? '–' : '${pred[m.team1]}–${pred[m.team2]}';
+    final act = actualResult(m, overrides);
+    final played = act != null;
+    final pts = played ? matchPointsFor(p, m, overrides) : null;
+    final sub = played
+        ? '${_prettyDate(_osloDateIso(m))} · fasit ${act[0]}–${act[1]} · ${pts}p'
+        : '${_prettyDate(_osloDateIso(m))} ${_osloTime(m)} · ${m.group.replaceFirst('Group', 'Gruppe')}';
+    final ptsColor = pts == 3
+        ? Colors.green
+        : (pts == 1 ? const Color(0xFFF5A623) : null);
+    return ListTile(
+      dense: true,
+      title: Text(
+          '${flagFor(m.team1)} ${m.team1}  –  ${flagFor(m.team2)} ${m.team2}'),
+      subtitle: Text(sub,
+          style: played && ptsColor != null
+              ? TextStyle(color: ptsColor, fontWeight: FontWeight.w600)
+              : null),
+      trailing: Text('Tippet: $tip',
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
     );
   }
 }
