@@ -640,6 +640,7 @@ const _internalToOfficial = {
   'Liv Marit': 'Liv Marit Brakstad',
   'Elisabeth': 'Elisabeth Laasby',
   'Sindre': 'Sindre Steinsvik',
+  'Erlend': 'Erlend Hollund',
   // 'Steinar' (Vassnes) er ikkje med i den offisielle lista.
 };
 
@@ -655,6 +656,7 @@ const _ourOfficialNames = {
   'Liv Marit Brakstad',
   'Elisabeth Laasby',
   'Sindre Steinsvik',
+  'Erlend Hollund',
 };
 
 /// Toppnivå-fane: enkel rangert tabell for den offisielle konkurransen.
