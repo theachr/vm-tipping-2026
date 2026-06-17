@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1071,6 +1072,110 @@ Standing standingFor(Participant p, List<MatchInfo> matches, Overrides ovr) {
   return Standing(p, group, medal, played);
 }
 
+/// Monte Carlo: sjanse (%) for 1. plass per deltaker.
+/// Tipsa er låste; berre uspilte kamp-resultat + sluttspel/medaljer er usikre.
+/// Spelte kamper og manuelle overstyringar er fasit; resten vert simulert.
+Map<String, double> simulateWinChances(
+    List<Participant> ps, List<MatchInfo> matches, Overrides ovr,
+    {int sims = 1000}) {
+  if (ps.isEmpty) return {};
+  final rnd = Random();
+  final group = matches.where((m) => m.isGroup).toList();
+  final koMatches = {for (final m in matches.where((m) => !m.isGroup)) m.num: m};
+  final wins = {for (final p in ps) p.name: 0.0};
+
+  int pois(double lam) {
+    final l = exp(-lam);
+    var k = 0;
+    var p = 1.0;
+    do {
+      k++;
+      p *= rnd.nextDouble();
+    } while (p > l);
+    return k - 1;
+  }
+
+  for (var s = 0; s < sims; s++) {
+    // 1) Resultat for alle gruppekamper (fasit der spilt, elles simulert).
+    final res = <int, List<int>>{};
+    for (final m in group) {
+      final a = actualResult(m, ovr);
+      res[m.num] = a ?? [pois(1.35), pois(1.15)];
+    }
+    Map<String, int>? scoreFor(MatchInfo m) {
+      final r = res[m.num];
+      return r == null ? null : {m.team1: r[0], m.team2: r[1]};
+    }
+    // 2) Vinnar-side per sluttspelkamp (fasit der spilt, elles tilfeldig).
+    final side = <int, int>{};
+    int sideOf(int num) {
+      final mi = koMatches[num];
+      if (mi != null) {
+        final w = winnerSideOf(mi, ovr);
+        if (w == 1) return 1;
+        if (w == 2) return 2;
+      }
+      return side.putIfAbsent(num, () => rnd.nextBool() ? 1 : 2);
+    }
+    final bracket = buildBracket(
+      scoreFor: scoreFor,
+      matches: matches,
+      winnerSide: (m) => sideOf(m.num),
+      requireComplete: true,
+    );
+    final byNum = {for (final km in bracket) km.num: km};
+    // 3) Medaljar frå simulert finale/bronsefinale.
+    String? gold, silver, bronze;
+    final fin = byNum[_finalNum];
+    if (fin != null && fin.home.resolved && fin.away.resolved) {
+      final w = sideOf(_finalNum);
+      gold = w == 1 ? fin.home.team : fin.away.team;
+      silver = w == 1 ? fin.away.team : fin.home.team;
+    }
+    final br = byNum[_thirdNum];
+    if (br != null && br.home.resolved && br.away.resolved) {
+      bronze = sideOf(_thirdNum) == 1 ? br.home.team : br.away.team;
+    }
+    final med = {'gold': gold, 'silver': silver, 'bronze': bronze};
+    // 4) Poengsum per deltaker = gruppepoeng + medaljepoeng.
+    var best = -1;
+    final leaders = <String>[];
+    for (final p in ps) {
+      var pts = medalPoints(p.medals, med);
+      for (final m in group) {
+        final pred = p.forMatch(m.team1, m.team2);
+        if (pred == null) continue;
+        final r = res[m.num]!;
+        pts += matchPoints(
+            pred1: pred[m.team1]!,
+            pred2: pred[m.team2]!,
+            act1: r[0],
+            act2: r[1]);
+      }
+      if (pts > best) {
+        best = pts;
+        leaders
+          ..clear()
+          ..add(p.name);
+      } else if (pts == best) {
+        leaders.add(p.name);
+      }
+    }
+    final share = 1.0 / leaders.length;
+    for (final n in leaders) {
+      wins[n] = wins[n]! + share;
+    }
+  }
+  return wins.map((k, v) => MapEntry(k, v * 100 / sims));
+}
+
+/// Pen prosent: «24%», «<1%», «0%».
+String _fmtPct(double v) {
+  if (v <= 0) return '0%';
+  if (v < 1) return '<1%';
+  return '${v.round()}%';
+}
+
 // ---- Startskjerm: resultattavle ----
 
 class HomePage extends StatefulWidget {
@@ -1109,6 +1214,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   static const _hiddenPrefKey = 'hidden_participants';
 
   DateTime? _liveAt; // siste vellukka live-oppdatering
+
+  // Vinnarsjanse (Monte Carlo), rekna på førespurnad.
+  Map<String, double>? _winPct;
+  bool _simBusy = false;
+
+  Future<void> _runSim() async {
+    setState(() => _simBusy = true);
+    await Future.delayed(const Duration(milliseconds: 50));
+    final r = simulateWinChances(_participants, _matches, _ovr!, sims: 1000);
+    if (!mounted) return;
+    setState(() {
+      _winPct = r;
+      _simBusy = false;
+    });
+  }
 
   @override
   void initState() {
@@ -1613,6 +1733,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+          child: Row(
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _simBusy ? null : _runSim,
+                icon: _simBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.casino_outlined, size: 18),
+                label: Text(_simBusy ? 'Reknar …' : 'Rekn vinnarsjanse'),
+              ),
+              const SizedBox(width: 10),
+              if (_winPct != null)
+                Expanded(
+                  child: Text(
+                    'Sjanse for 1. plass (1000 simuleringar av resten).',
+                    style: TextStyle(fontSize: 11, color: scheme.outline),
+                  ),
+                ),
+            ],
+          ),
+        ),
         for (var i = 0; i < standings.length; i++)
           _standingTile(standings[i], i + 1, officialRank),
         const SizedBox(height: 24),
@@ -1677,7 +1822,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         ],
       ),
-      subtitle: Text('Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal} · ${s.played} kamper talt'),
+      subtitle: Text(
+          'Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal}'
+          '${_winPct != null ? ' · 🏆 ${_fmtPct(_winPct![s.p.name] ?? 0)} sjanse' : ''}'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
