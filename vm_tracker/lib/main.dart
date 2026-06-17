@@ -701,16 +701,16 @@ class _OfficialViewState extends State<OfficialView> {
                       fontSize: 15, fontWeight: FontWeight.bold)),
               const SizedBox(height: 2),
               Text(
-                'Rangert på poeng (gruppe + medaljer). Fyller seg etter hvert '
-                'som resultatene kommer. Dine egne er uthevet.',
+                'Rangert på poeng (gruppe + medaljer). Trykk på en person for '
+                'å se tipsene deres. Dine egne er uthevet.',
                 style: TextStyle(fontSize: 12, color: scheme.outline),
               ),
               const SizedBox(height: 8),
               TextField(
                 decoration: InputDecoration(
                   isDense: true,
-                  prefixIcon: const Icon(Icons.search, size: 18),
-                  hintText: 'Søk etter navn …',
+                  prefixIcon: const Icon(Icons.chat_bubble_outline, size: 18),
+                  hintText: 'Spør / søk, t.d. «hva har Olav tippet?»',
                   border: const OutlineInputBorder(),
                 ),
                 onChanged: (v) => setState(() => _query = v),
@@ -724,7 +724,7 @@ class _OfficialViewState extends State<OfficialView> {
             itemBuilder: (_, i) {
               final s = standings[i];
               final rank = i + 1;
-              if (q.isNotEmpty && !s.p.name.toLowerCase().contains(q)) {
+              if (!_matchesQuery(s.p.name, q)) {
                 return const SizedBox.shrink();
               }
               final ours = _ourOfficialNames.contains(s.p.name);
@@ -739,6 +739,16 @@ class _OfficialViewState extends State<OfficialView> {
                 color: ours ? scheme.primary.withValues(alpha: 0.10) : null,
                 child: ListTile(
                   dense: true,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OfficialTipsPage(
+                        p: s.p,
+                        matches: widget.matches,
+                        overrides: widget.overrides,
+                      ),
+                    ),
+                  ),
                   leading: CircleAvatar(
                     radius: 16,
                     backgroundColor: rankColor,
@@ -755,15 +765,125 @@ class _OfficialViewState extends State<OfficialView> {
                             ours ? FontWeight.bold : FontWeight.w500),
                   ),
                   subtitle: Text('Gruppepoeng: ${s.group} · Medaljepoeng: ${s.medal}'),
-                  trailing: Text('${s.total} p',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${s.total} p',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Icon(Icons.chevron_right, size: 18),
+                    ],
+                  ),
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  /// Treffer søket/spørsmålet namnet? Handterer både «søk» og «spørsmål»:
+  /// namnet inneheld teksten, ELLER teksten (ei setning) nemner namnet/fornamnet.
+  bool _matchesQuery(String name, String q) {
+    if (q.isEmpty) return true;
+    final n = name.toLowerCase();
+    if (n.contains(q)) return true;
+    if (q.contains(n)) return true;
+    final first = n.split(' ').first;
+    if (first.length >= 3 && q.contains(first)) return true;
+    return false;
+  }
+}
+
+/// Detaljside: éin offisiell deltaker sine tips for komande kamper + medaljer.
+class OfficialTipsPage extends StatelessWidget {
+  final Participant p;
+  final List<MatchInfo> matches;
+  final Overrides overrides;
+  const OfficialTipsPage(
+      {super.key,
+      required this.p,
+      required this.matches,
+      required this.overrides});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final upcoming = matches
+        .where((m) => m.isGroup && actualResult(m, overrides) == null)
+        .toList()
+      ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
+
+    Widget medalChip(String emoji, String? team) => Expanded(
+          child: Column(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 20)),
+              const SizedBox(height: 2),
+              Text(team == null || team.isEmpty ? '–' : '${flagFor(team)} $team',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+            ],
+          ),
+        );
+
+    return Scaffold(
+      appBar: AppBar(title: Text(p.name)),
+      body: ListView(
+        children: [
+          Card(
+            margin: const EdgeInsets.all(12),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Medaljer',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    medalChip('🥇', p.medals['gold']),
+                    medalChip('🥈', p.medals['silver']),
+                    medalChip('🥉', p.medals['bronze']),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: Text(
+              'Tips – komande kamper (${upcoming.length})',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (upcoming.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Ingen komande gruppekamper.',
+                  style: TextStyle(color: scheme.outline)),
+            ),
+          for (final m in upcoming)
+            Builder(builder: (_) {
+              final pred = p.forMatch(m.team1, m.team2);
+              final tip =
+                  pred == null ? '–' : '${pred[m.team1]}–${pred[m.team2]}';
+              return ListTile(
+                dense: true,
+                title: Text(
+                    '${flagFor(m.team1)} ${m.team1}  –  ${flagFor(m.team2)} ${m.team2}'),
+                subtitle: Text(
+                    '${_prettyDate(_osloDateIso(m))} ${_osloTime(m)} · '
+                    '${m.group.replaceFirst('Group', 'Gruppe')}'),
+                trailing: Text(tip,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+              );
+            }),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }
