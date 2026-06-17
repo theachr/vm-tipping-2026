@@ -820,8 +820,8 @@ class _OfficialViewState extends State<OfficialView> {
   }
 }
 
-/// Detaljside: éin offisiell deltaker sine tips for komande kamper + medaljer.
-class OfficialTipsPage extends StatelessWidget {
+/// Detaljside: éin offisiell deltaker sine tips, med Kommende/Tidligere-filter.
+class OfficialTipsPage extends StatefulWidget {
   final Participant p;
   final List<MatchInfo> matches;
   final Overrides overrides;
@@ -832,12 +832,25 @@ class OfficialTipsPage extends StatelessWidget {
       required this.overrides});
 
   @override
+  State<OfficialTipsPage> createState() => _OfficialTipsPageState();
+}
+
+class _OfficialTipsPageState extends State<OfficialTipsPage> {
+  bool _showUpcoming = true;
+  bool _showPlayed = false;
+
+  Participant get p => widget.p;
+  Overrides get ovr => widget.overrides;
+
+  @override
   Widget build(BuildContext context) {
-    // Alle gruppekamper, kronologisk (spilte først, så komande).
-    final groupMatches = matches.where((m) => m.isGroup).toList()
+    final scheme = Theme.of(context).colorScheme;
+    final group = widget.matches.where((m) => m.isGroup).toList()
       ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
-    final upcoming =
-        groupMatches.where((m) => actualResult(m, overrides) == null).toList();
+    final shown = group.where((m) {
+      final played = actualResult(m, ovr) != null;
+      return played ? _showPlayed : _showUpcoming;
+    }).toList();
 
     Widget medalChip(String emoji, String? team) => Expanded(
           child: Column(
@@ -863,8 +876,8 @@ class OfficialTipsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Medaljer',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.bold)),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Row(children: [
                     medalChip('🥇', p.medals['gold']),
@@ -875,43 +888,43 @@ class OfficialTipsPage extends StatelessWidget {
               ),
             ),
           ),
-          // Komande kamper først (det folk er mest interesserte i).
-          if (upcoming.isNotEmpty)
-            _tipSectionHeader('Komande kamper (${upcoming.length})'),
-          for (final m in upcoming) _officialTipTile(m),
-          // Så dei spilte (eldst nederst).
-          Builder(builder: (_) {
-            final played = groupMatches
-                .where((m) => actualResult(m, overrides) != null)
-                .toList()
-                .reversed
-                .toList();
-            if (played.isEmpty) return const SizedBox.shrink();
-            return Column(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+            child: Wrap(
+              spacing: 8,
               children: [
-                _tipSectionHeader('Tidlegare kamper (${played.length})'),
-                for (final m in played) _officialTipTile(m),
+                FilterChip(
+                  label: const Text('Kommende'),
+                  selected: _showUpcoming,
+                  onSelected: (v) => setState(() => _showUpcoming = v),
+                ),
+                FilterChip(
+                  label: const Text('Tidligere'),
+                  selected: _showPlayed,
+                  onSelected: (v) => setState(() => _showPlayed = v),
+                ),
               ],
-            );
-          }),
+            ),
+          ),
+          if (shown.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Ingen kamper å vise. Huk av eit filter.',
+                  style: TextStyle(color: scheme.outline)),
+            ),
+          for (final m in shown) _officialTipTile(m),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _tipSectionHeader(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-        child: Text(text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-      );
-
   Widget _officialTipTile(MatchInfo m) {
     final pred = p.forMatch(m.team1, m.team2);
     final tip = pred == null ? '–' : '${pred[m.team1]}–${pred[m.team2]}';
-    final act = actualResult(m, overrides);
+    final act = actualResult(m, ovr);
     final played = act != null;
-    final pts = played ? matchPointsFor(p, m, overrides) : null;
+    final pts = played ? matchPointsFor(p, m, ovr) : null;
     final sub = played
         ? '${_prettyDate(_osloDateIso(m))} · fasit ${act[0]}–${act[1]} · ${pts}p'
         : '${_prettyDate(_osloDateIso(m))} ${_osloTime(m)} · ${m.group.replaceFirst('Group', 'Gruppe')}';
