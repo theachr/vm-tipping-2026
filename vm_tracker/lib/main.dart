@@ -2318,50 +2318,91 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
   /// «Mest tippa»-rad: dei 3 vanlegaste resultata blant alle offisielle tips.
   List<Widget> _consensusRow(MatchInfo m) {
     if (widget.official.isEmpty) return const [];
-    final counts = <String, int>{};
+    // Alle tippa stillingar (av dei 143 offisielle) -> kven tippa kvar.
+    final byScore = <String, List<String>>{};
     var total = 0;
     for (final p in widget.official) {
       final pred = p.forMatch(m.team1, m.team2);
       if (pred == null) continue;
       final key = '${pred[m.team1]}–${pred[m.team2]}';
-      counts[key] = (counts[key] ?? 0) + 1;
+      byScore.putIfAbsent(key, () => []).add(p.name);
       total++;
     }
     if (total == 0) return const [];
-    final top = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entries = byScore.entries.toList()
+      ..sort((a, b) => b.value.length.compareTo(a.value.length));
     final scheme = Theme.of(context).colorScheme;
     return [
       Padding(
-        padding: const EdgeInsets.only(top: 6, bottom: 6),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text('💰 Mest tippa',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.primary)),
-            for (final e in top.take(3))
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+        padding: const EdgeInsets.only(top: 8, bottom: 2),
+        child: Row(children: [
+          Text('💰 Alle tippa resultat',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: scheme.primary)),
+          const SizedBox(width: 6),
+          Text('(av $total) – trykk for å sjå kven',
+              style: TextStyle(fontSize: 11, color: scheme.outline)),
+        ]),
+      ),
+      for (final e in entries)
+        Theme(
+          // Fjern standard-dividerane i den nøsta ExpansionTile.
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            dense: true,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 4, 8),
+            title: Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(e.key,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.bold)),
                 ),
-                child: Text(
-                  '${e.key}  ${(e.value * 100 / total).round()}%',
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                const SizedBox(width: 10),
+                Text(
+                    '${e.value.length}  ·  ${_fmtPct(e.value.length * 100 / total)}',
+                    style: TextStyle(fontSize: 12, color: scheme.outline)),
+              ],
+            ),
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final name in e.value..sort())
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _ourOfficialNames.contains(name)
+                              ? scheme.primary.withValues(alpha: 0.18)
+                              : scheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(name,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: _ourOfficialNames.contains(name)
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
+                      ),
+                  ],
                 ),
               ),
-            Text('av $total', style: TextStyle(fontSize: 11, color: scheme.outline)),
-          ],
+            ],
+          ),
         ),
-      ),
     ];
   }
 
