@@ -2020,10 +2020,10 @@ class UpcomingMatchesView extends StatefulWidget {
   State<UpcomingMatchesView> createState() => _UpcomingMatchesViewState();
 }
 
-enum _MatchFilter { upcoming, nextPerGroup, all }
-
 class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
-  _MatchFilter _filter = _MatchFilter.upcoming;
+  bool _showUpcoming = true; // kommende
+  bool _showPlayed = false; // tidligere
+  bool _perGroup = false; // eigen modus: neste pr. gruppe
 
   @override
   Widget build(BuildContext context) {
@@ -2032,33 +2032,49 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
       ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
 
     Widget body;
-    if (_filter == _MatchFilter.nextPerGroup) {
+    if (_perGroup) {
       body = _nextPerGroupList(all, ovr);
     } else {
-      final shown = _filter == _MatchFilter.upcoming
-          ? all.where((m) => actualResult(m, ovr) == null).toList()
-          : all;
+      final shown = all.where((m) {
+        final played = actualResult(m, ovr) != null;
+        return played ? _showPlayed : _showUpcoming;
+      }).toList();
       body = shown.isEmpty
-          ? const Center(child: Text('Ingen kamper å vise.'))
+          ? const Center(child: Text('Ingen kamper å vise. Huk av eit filter.'))
           : ListView(children: _groupedByDay(shown));
     }
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
-          child: SegmentedButton<_MatchFilter>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(
-                  value: _MatchFilter.upcoming, label: Text('Kommende')),
-              ButtonSegment(
-                  value: _MatchFilter.nextPerGroup,
-                  label: Text('Neste pr. gruppe')),
-              ButtonSegment(value: _MatchFilter.all, label: Text('Alle')),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              FilterChip(
+                label: const Text('Kommende'),
+                selected: !_perGroup && _showUpcoming,
+                onSelected: (v) => setState(() {
+                  _perGroup = false;
+                  _showUpcoming = v;
+                }),
+              ),
+              FilterChip(
+                label: const Text('Tidligere'),
+                selected: !_perGroup && _showPlayed,
+                onSelected: (v) => setState(() {
+                  _perGroup = false;
+                  _showPlayed = v;
+                }),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.table_chart_outlined, size: 16),
+                label: const Text('Neste pr. gruppe'),
+                selected: _perGroup,
+                onSelected: (v) => setState(() => _perGroup = v),
+              ),
             ],
-            selected: {_filter},
-            onSelectionChanged: (s) => setState(() => _filter = s.first),
           ),
         ),
         Expanded(child: body),
