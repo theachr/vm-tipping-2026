@@ -421,10 +421,15 @@ class _KnockoutViewState extends State<KnockoutView> {
           child: BracketView(
             matches: ko,
             highlight: highlight,
+            resultSide: {
+              for (final m in widget.matches.where((m) => !m.isGroup))
+                m.num: winnerSideOf(m, widget.overrides)
+            },
             caption:
                 'Slik sluttspelet ligg an NO, ut fra resultata. '
                 'Faste/avgjorde lag står normalt. '
-                '🟠 oransje = projisert ut fra stillinga no – kan endre seg.',
+                '🟠 oransje = projisert (kan endre seg). '
+                'Spilt kamp: 🟢 vinnar, 🔴 tapar.',
           ),
         ),
       ],
@@ -2711,10 +2716,13 @@ class _ParticipantPageState extends State<ParticipantPage> {
           child: BracketView(
             matches: ko,
             highlight: _p.medals.values.toSet(),
+            resultSide: {
+              for (final m in _matches.where((m) => !m.isGroup))
+                m.num: winnerSideOf(m, _ovr)
+            },
             caption: _bracketResults
                 ? 'Sluttspilltreet ut fra faktiske resultat. Medaljetipsene dine '
-                    'er uthevet. Venstre og høyre halvdel møtes i finalen i '
-                    'midten; ekte lag fyller inn etter hvert.'
+                    'er uthevet. Spilt kamp: 🟢 vinnar, 🔴 tapar.'
                 : '${_p.name} sin projeksjon ut fra tippingene. Medaljetipsene '
                     'er uthevet. Venstre og høyre halvdel møtes i finalen i midten.',
           ),
@@ -3139,8 +3147,13 @@ class BracketView extends StatelessWidget {
   final List<KoMatch> matches;
   final Set<String> highlight;
   final String? caption;
+  final Map<int, int?> resultSide; // kampnr -> vinnar-side (1/2) når spilt
   const BracketView(
-      {super.key, required this.matches, required this.highlight, this.caption});
+      {super.key,
+      required this.matches,
+      required this.highlight,
+      this.caption,
+      this.resultSide = const {}});
 
   @override
   Widget build(BuildContext context) {
@@ -3160,7 +3173,11 @@ class BracketView extends StatelessWidget {
       cards.add(Positioned(
         left: _colX(col),
         top: centerY - _cardH / 2 - (title != null ? _titleH : 0),
-        child: _MatchCard(km: km, highlight: highlight, title: title),
+        child: _MatchCard(
+            km: km,
+            highlight: highlight,
+            title: title,
+            side: resultSide[km.num]),
       ));
     }
 
@@ -3180,7 +3197,11 @@ class BracketView extends StatelessWidget {
       cards.add(Positioned(
         left: _colX(_finalCol),
         top: midY + _cardH / 2 + 30,
-        child: _MatchCard(km: third, highlight: highlight, title: '🥉 Bronsefinale'),
+        child: _MatchCard(
+            km: third,
+            highlight: highlight,
+            title: '🥉 Bronsefinale',
+            side: resultSide[third.num]),
       ));
     }
 
@@ -3247,21 +3268,35 @@ class _MatchCard extends StatelessWidget {
   final KoMatch km;
   final Set<String> highlight;
   final String? title;
-  const _MatchCard({required this.km, required this.highlight, this.title});
+  final int? side; // 1 = heime vann, 2 = borte vann, elles ikkje spilt
+  const _MatchCard(
+      {required this.km, required this.highlight, this.title, this.side});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    Widget teamRow(KoTeam t) {
+    Widget teamRow(KoTeam t, {required bool isHome}) {
       final hot = t.team != null && highlight.contains(t.team);
-      // Berre projiserte (ikkje avgjorde) får farge (oransje). Faste = ingen.
+      final won = t.resolved && ((isHome && side == 1) || (!isHome && side == 2));
+      final lost = t.resolved && ((isHome && side == 2) || (!isHome && side == 1));
       final projected = t.resolved && t.projected;
-      final stripe = projected ? const Color(0xFFF5A623) : Colors.transparent;
-      final tint = hot
-          ? scheme.primaryContainer
-          : (projected
-              ? const Color(0xFFF5A623).withValues(alpha: 0.12)
-              : null);
+      // Spilt kamp: vinnar grøn, tapar raud. Elles: projisert = oransje.
+      final Color stripe;
+      Color? statusTint;
+      if (won) {
+        stripe = Colors.green;
+        statusTint = Colors.green.withValues(alpha: 0.16);
+      } else if (lost) {
+        stripe = Colors.red;
+        statusTint = Colors.red.withValues(alpha: 0.13);
+      } else if (projected) {
+        stripe = const Color(0xFFF5A623);
+        statusTint = const Color(0xFFF5A623).withValues(alpha: 0.12);
+      } else {
+        stripe = Colors.transparent;
+        statusTint = null;
+      }
+      final tint = hot ? scheme.primaryContainer : statusTint;
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
@@ -3314,9 +3349,9 @@ class _MatchCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              Expanded(child: teamRow(km.home)),
+              Expanded(child: teamRow(km.home, isHome: true)),
               Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
-              Expanded(child: teamRow(km.away)),
+              Expanded(child: teamRow(km.away, isHome: false)),
             ],
           ),
         ),
