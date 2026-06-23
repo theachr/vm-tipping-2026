@@ -2402,27 +2402,33 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
     final scheme = Theme.of(context).colorScheme;
     return [
-      Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 2),
-        child: Row(children: [
-          Text('💰 Alle tippa resultat',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.primary)),
-          const SizedBox(width: 6),
-          Text('(av $total) – trykk for å sjå kven',
-              style: TextStyle(fontSize: 11, color: scheme.outline)),
-        ]),
-      ),
-      for (final e in entries)
-        Theme(
-          // Fjern standard-dividerane i den nøsta ExpansionTile.
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            dense: true,
-            tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 4, 8),
+      Theme(
+        // Fjern standard-dividerane i den nøsta ExpansionTile.
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          dense: true,
+          initiallyExpanded: false, // startar lukka
+          tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+          childrenPadding: const EdgeInsets.only(left: 6),
+          title: Row(children: [
+            Text('💰 Alle tippa resultat',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.primary)),
+            const SizedBox(width: 6),
+            Text('(av $total)',
+                style: TextStyle(fontSize: 11, color: scheme.outline)),
+          ]),
+          children: [
+            for (final e in entries)
+              Theme(
+                data: Theme.of(context)
+                    .copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  dense: true,
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                  childrenPadding: const EdgeInsets.fromLTRB(12, 0, 4, 8),
             title: Row(
               children: [
                 Container(
@@ -2472,6 +2478,9 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
             ],
           ),
         ),
+          ],
+        ),
+      ),
     ];
   }
 
