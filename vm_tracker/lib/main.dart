@@ -1421,10 +1421,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  /// Vår interne pool (kun for «kven har tippa»-lista i Kampar).
-  List<Participant> get _visible =>
-      _participants.where((p) => !_hidden.contains(p.name)).toList();
-
   Participant? _officialByName(String n) {
     for (final p in _official) {
       if (p.name == n) return p;
@@ -1719,7 +1715,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   : _navIndex == 2
                       ? UpcomingMatchesView(
                           matches: _matches,
-                          participants: _visible,
+                          participants: _boardParticipants()
+                              .where((p) => !_hidden.contains(p.name))
+                              .toList(),
                           overrides: _ovr!,
                           live: _live,
                           official: _official,
