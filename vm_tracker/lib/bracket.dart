@@ -373,9 +373,28 @@ List<KoMatch> buildBracket({
   required List<MatchInfo> matches,
   required int? Function(MatchInfo) winnerSide,
   bool requireComplete = false,
+  // [project]: fyll treet frå NOVERANDE stilling sjølv om gruppene ikkje er
+  // ferdige. Plassar i ferdigspilt grupper vert merkte som avgjorde
+  // (projected=false), resten som projiserte (projected=true, "kan endre seg").
+  bool project = false,
 }) {
-  final rich =
-      _richStandings(scoreFor, matches, requireComplete: requireComplete);
+  final rich = _richStandings(scoreFor, matches,
+      requireComplete: requireComplete && !project);
+
+  // Kva grupper er ferdigspilte (alle kampar har eit resultat)?
+  final groupComplete = <String, bool>{};
+  {
+    final byG = <String, List<MatchInfo>>{};
+    for (final m in matches.where((m) => m.isGroup)) {
+      byG.putIfAbsent(m.group, () => []).add(m);
+    }
+    byG.forEach((g, ms) {
+      groupComplete[g.replaceFirst('Group ', '')] =
+          ms.every((m) => scoreFor(m) != null);
+    });
+  }
+  final allComplete =
+      groupComplete.isNotEmpty && groupComplete.values.every((x) => x);
   final standings =
       rich.map((g, rows) => MapEntry(g, [for (final r in rows) r.team]));
   final groupTeams = <String>{
@@ -444,16 +463,21 @@ List<KoMatch> buildBracket({
     final m = _slotRe.firstMatch(code);
     if (m != null) {
       final pos = m[1]!;
-      final tbl = standings['Group ${m[2]}'];
+      final letter = m[2]!;
+      final tbl = standings['Group $letter'];
       if (tbl != null && tbl.length >= 2) {
         final t = pos == '1' ? tbl[0] : tbl[1];
-        return KoTeam(t, t, projected: markProjected);
+        final proj = project ? !(groupComplete[letter] ?? false) : markProjected;
+        return KoTeam(t, t, projected: proj);
       }
       return KoTeam(null, code);
     }
     if (_thirdGroups(code) != null) {
       final t = thirdSlotToTeam[code];
-      if (t != null) return KoTeam(t, t, projected: markProjected);
+      if (t != null) {
+        final proj = project ? !allComplete : markProjected;
+        return KoTeam(t, t, projected: proj);
+      }
       return KoTeam(null, '3.plass');
     }
     final wl = _wlRe.firstMatch(code);

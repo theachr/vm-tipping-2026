@@ -403,11 +403,12 @@ class _KnockoutViewState extends State<KnockoutView> {
 
   @override
   Widget build(BuildContext context) {
+    // «Slik det ligg an no»: fyll frå noverande stilling (project: true).
     final ko = buildBracket(
       scoreFor: _resultScore(widget.overrides),
       matches: widget.matches,
       winnerSide: (m) => winnerSideOf(m, widget.overrides),
-      requireComplete: true,
+      project: true,
     );
     final medals = actualMedals(widget.matches, widget.overrides);
     final highlight = <String>{
@@ -421,10 +422,10 @@ class _KnockoutViewState extends State<KnockoutView> {
             matches: ko,
             highlight: highlight,
             caption:
-                'Sluttspilloppsettet ut fra faktiske resultat (felles for alle). '
-                'Plassene (1A, 2B, 3.-ere, vinner/taper av kamp) fyller seg med '
-                'ekte lag etter hvert som gruppene og sluttspillkampene blir spilt. '
-                'Venstre og høyre halvdel møtes i finalen i midten.',
+                'Slik sluttspelet ligg an NO, ut fra resultata. '
+                '🟢 grøn kant = avgjort (gruppa er ferdigspilt). '
+                '🟠 oransje kant = projisert ut fra stillinga no – kan endre seg. '
+                'Grå = ikkje klart enno.',
           ),
         ),
       ],
@@ -3254,9 +3255,25 @@ class _MatchCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     Widget teamRow(KoTeam t) {
       final hot = t.team != null && highlight.contains(t.team);
+      // Status: avgjort (grøn) / projisert (oransje) / ukjent (grå).
+      final decided = t.resolved && !t.projected;
+      final projected = t.resolved && t.projected;
+      final stripe = decided
+          ? Colors.green
+          : (projected ? const Color(0xFFF5A623) : Colors.transparent);
+      final tint = hot
+          ? scheme.primaryContainer
+          : (decided
+              ? Colors.green.withValues(alpha: 0.12)
+              : (projected
+                  ? const Color(0xFFF5A623).withValues(alpha: 0.12)
+                  : null));
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        color: hot ? scheme.primaryContainer : null,
+        decoration: BoxDecoration(
+          color: tint,
+          border: Border(left: BorderSide(color: stripe, width: 4)),
+        ),
         child: Row(
           children: [
             Text(t.resolved ? flagFor(t.team!) : '·',
