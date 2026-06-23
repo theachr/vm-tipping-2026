@@ -2274,11 +2274,17 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     final act = actualResult(m, widget.overrides);
     final label = m.isGroup ? m.group.replaceFirst('Group', 'Gruppe') : m.round;
 
-    // Hvem har tippet på denne kampen?
+    // Hvem har tippet på denne kampen? Sortert på høgast totalscore.
+    int score(Participant p) =>
+        standingFor(p, widget.matches, widget.overrides).total +
+        liveTempTotal(p, widget.matches, widget.live);
     final tippers = <Participant>[
       for (final p in widget.participants)
         if (p.forMatch(m.team1, m.team2) != null) p
-    ];
+    ]..sort((a, b) {
+        final c = score(b).compareTo(score(a));
+        return c != 0 ? c : a.name.compareTo(b.name);
+      });
 
     final li = widget.live[m.num];
     Widget trailing;
