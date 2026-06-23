@@ -423,9 +423,8 @@ class _KnockoutViewState extends State<KnockoutView> {
             highlight: highlight,
             caption:
                 'Slik sluttspelet ligg an NO, ut fra resultata. '
-                '🟢 grøn kant = avgjort (gruppa er ferdigspilt). '
-                '🟠 oransje kant = projisert ut fra stillinga no – kan endre seg. '
-                'Grå = ikkje klart enno.',
+                'Faste/avgjorde lag står normalt. '
+                '🟠 oransje = projisert ut fra stillinga no – kan endre seg.',
           ),
         ),
       ],
@@ -3255,19 +3254,14 @@ class _MatchCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     Widget teamRow(KoTeam t) {
       final hot = t.team != null && highlight.contains(t.team);
-      // Status: avgjort (grøn) / projisert (oransje) / ukjent (grå).
-      final decided = t.resolved && !t.projected;
+      // Berre projiserte (ikkje avgjorde) får farge (oransje). Faste = ingen.
       final projected = t.resolved && t.projected;
-      final stripe = decided
-          ? Colors.green
-          : (projected ? const Color(0xFFF5A623) : Colors.transparent);
+      final stripe = projected ? const Color(0xFFF5A623) : Colors.transparent;
       final tint = hot
           ? scheme.primaryContainer
-          : (decided
-              ? Colors.green.withValues(alpha: 0.12)
-              : (projected
-                  ? const Color(0xFFF5A623).withValues(alpha: 0.12)
-                  : null));
+          : (projected
+              ? const Color(0xFFF5A623).withValues(alpha: 0.12)
+              : null);
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
