@@ -216,9 +216,9 @@ class Scenario {
 String _roundNo(String r) {
   switch (r) {
     case 'Round of 32':
-      return '32-delsfinale';
-    case 'Round of 16':
       return '16-delsfinale';
+    case 'Round of 16':
+      return '8-delsfinale';
     case 'Quarter-final':
       return 'Kvartfinale';
     case 'Semi-final':

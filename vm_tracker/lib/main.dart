@@ -3118,7 +3118,7 @@ const _rightRounds = <List<int>>[
 const _finalNum = 104;
 const _thirdNum = 103;
 const _finalCol = 4; // midtkolonne
-const _roundTitles = ['32-del', '16-del', 'Kvartfinale', 'Semifinale'];
+const _roundTitles = ['16-delsfinale', '8-delsfinale', 'Kvartfinale', 'Semifinale'];
 
 double _colX(int col) => _leftPad + col * (_cardW + _colGap);
 int _leftCol(int r) => r; // 0..3
