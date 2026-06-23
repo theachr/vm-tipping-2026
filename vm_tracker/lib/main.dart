@@ -661,6 +661,12 @@ const _ourOfficialNames = {
   'Maja Hermansen',
 };
 
+/// «Bulo»-kategori: offisielle deltakere vi tar inn på Tavla (faste).
+const _buloOfficial = {
+  'Ronny Thomassen',
+  'Bjørn Tore Bøe',
+};
+
 /// Toppnivå-fane: enkel rangert tabell for den offisielle konkurransen.
 class OfficialView extends StatefulWidget {
   final List<Participant> official;
@@ -1415,9 +1421,48 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  /// Deltakarane som faktisk skal visast (filteret teke med).
+  /// Vår interne pool (kun for «kven har tippa»-lista i Kampar).
   List<Participant> get _visible =>
       _participants.where((p) => !_hidden.contains(p.name)).toList();
+
+  Participant? _officialByName(String n) {
+    for (final p in _official) {
+      if (p.name == n) return p;
+    }
+    return null;
+  }
+
+  /// Dei 5 beste i den offisielle konkurransen som ikkje er «våre» / Bulo.
+  List<String> _topFiveNames() {
+    if (_official.isEmpty) return const [];
+    final st = _official.map((p) => standingFor(p, _matches, _ovr!)).toList()
+      ..sort((a, b) {
+        final c = b.total.compareTo(a.total);
+        return c != 0 ? c : a.p.name.compareTo(b.p.name);
+      });
+    final excl = {..._ourOfficialNames, ..._buloOfficial};
+    final out = <String>[];
+    for (final s in st) {
+      if (excl.contains(s.p.name)) continue;
+      out.add(s.p.name);
+      if (out.length == 5) break;
+    }
+    return out;
+  }
+
+  /// Alle deltakarar som skal visast på Tavla: vår pool + Bulo + Topp 5.
+  List<Participant> _boardParticipants() {
+    final out = <String, Participant>{for (final p in _participants) p.name: p};
+    for (final n in _buloOfficial) {
+      final p = _officialByName(n);
+      if (p != null) out[n] = p;
+    }
+    for (final n in _topFiveNames()) {
+      final p = _officialByName(n);
+      if (p != null) out[n] = p;
+    }
+    return out.values.toList();
+  }
 
   Future<void> _setHidden(Set<String> hidden) async {
     setState(() => _hidden = hidden);
@@ -1425,16 +1470,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await prefs.setStringList(_hiddenPrefKey, hidden.toList());
   }
 
-  /// Deltakarar gruppert i lag (Chræs / Andre / IT). IT = alle andre.
+  /// Deltakarar gruppert i lag (Chræs / Andre / Bulo / Topp 5 / IT).
   Map<String, List<Participant>> _participantGroups() {
     const chras = {'Britt Heidi', 'Svein Egil', 'Simen og Lina', 'Thea'};
     const andre = {'Liv Marit', 'Kenneth', 'Maja Emilie'};
-    final out = <String, List<Participant>>{'Chræs': [], 'Andre': [], 'IT': []};
-    for (final p in _participants) {
-      if (chras.contains(p.name)) {
+    final top5 = _topFiveNames().toSet();
+    final out = <String, List<Participant>>{
+      'Chræs': [],
+      'Andre': [],
+      'Bulo': [],
+      'Topp 5': [],
+      'IT': []
+    };
+    for (final p in _boardParticipants()) {
+      final n = p.name;
+      if (chras.contains(n)) {
         out['Chræs']!.add(p);
-      } else if (andre.contains(p.name)) {
+      } else if (andre.contains(n)) {
         out['Andre']!.add(p);
+      } else if (_buloOfficial.contains(n)) {
+        out['Bulo']!.add(p);
+      } else if (top5.contains(n)) {
+        out['Topp 5']!.add(p);
       } else {
         out['IT']!.add(p);
       }
@@ -1568,7 +1625,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // medan kampene går. Tiebreak: reell total, så navn.
     int effective(Standing s) =>
         s.total + liveTempTotal(s.p, _matches, _live);
-    final standings = _visible
+    final standings = _boardParticipants()
+        .where((p) => !_hidden.contains(p.name))
         .map((p) => standingFor(p, _matches, _ovr!))
         .toList()
       ..sort((a, b) {
@@ -1852,7 +1910,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _standingTile(Standing s, int rank, Map<String, int> officialRank) {
     final temp = liveTempTotal(s.p, _matches, _live);
-    final offName = _internalToOfficial[s.p.name];
+    // For våre korte namn: slå opp offisielt namn. For Bulo/Topp 5 ER namnet
+    // alt det offisielle.
+    final offName = _internalToOfficial[s.p.name] ??
+        (officialRank.containsKey(s.p.name) ? s.p.name : null);
     final offRank = offName != null ? officialRank[offName] : null;
     final scheme = Theme.of(context).colorScheme;
     final medalColor = switch (rank) {
