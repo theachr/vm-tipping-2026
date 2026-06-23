@@ -665,6 +665,8 @@ const _ourOfficialNames = {
 const _andreOfficial = {
   'Ronny Thomassen',
   'Bjørn Tore Bøe',
+  'Lillian Hopland',
+  'Morten Storheim',
 };
 
 /// Toppnivå-fane: enkel rangert tabell for den offisielle konkurransen.
