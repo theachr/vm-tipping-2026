@@ -661,8 +661,8 @@ const _ourOfficialNames = {
   'Maja Hermansen',
 };
 
-/// «Bulo»-kategori: offisielle deltakere vi tar inn på Tavla (faste).
-const _buloOfficial = {
+/// Offisielle deltakere vi tar inn på Tavla under «Andre» (faste).
+const _andreOfficial = {
   'Ronny Thomassen',
   'Bjørn Tore Bøe',
 };
@@ -1440,7 +1440,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final c = b.total.compareTo(a.total);
         return c != 0 ? c : a.p.name.compareTo(b.p.name);
       });
-    final excl = {..._ourOfficialNames, ..._buloOfficial};
+    final excl = {..._ourOfficialNames, ..._andreOfficial};
     final out = <String>[];
     for (final s in st) {
       if (excl.contains(s.p.name)) continue;
@@ -1453,7 +1453,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   /// Alle deltakarar som skal visast på Tavla: vår pool + Bulo + Topp 5.
   List<Participant> _boardParticipants() {
     final out = <String, Participant>{for (final p in _participants) p.name: p};
-    for (final n in _buloOfficial) {
+    for (final n in _andreOfficial) {
       final p = _officialByName(n);
       if (p != null) out[n] = p;
     }
@@ -1478,7 +1478,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final out = <String, List<Participant>>{
       'Chræs': [],
       'Andre': [],
-      'Bulo': [],
       'Topp 5': [],
       'IT': []
     };
@@ -1486,10 +1485,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final n = p.name;
       if (chras.contains(n)) {
         out['Chræs']!.add(p);
-      } else if (andre.contains(n)) {
+      } else if (andre.contains(n) || _andreOfficial.contains(n)) {
         out['Andre']!.add(p);
-      } else if (_buloOfficial.contains(n)) {
-        out['Bulo']!.add(p);
       } else if (top5.contains(n)) {
         out['Topp 5']!.add(p);
       } else {
