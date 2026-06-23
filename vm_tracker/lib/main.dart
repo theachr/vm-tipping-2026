@@ -2130,10 +2130,27 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
   bool _showUpcoming = true; // kommende
   bool _showPlayed = false; // tidligere
   bool _perGroup = false; // eigen modus: neste pr. gruppe
+  Map<String, int> _offRank = const {}; // offisielt namn -> plassering
+
+  /// Total (reell + live temp) for ein deltaker.
+  int _totalScore(Participant p) =>
+      standingFor(p, widget.matches, widget.overrides).total +
+      liveTempTotal(p, widget.matches, widget.live);
 
   @override
   Widget build(BuildContext context) {
     final ovr = widget.overrides;
+    // Offisiell rangering (for 💰-merket i tippe-lista).
+    if (widget.official.isNotEmpty) {
+      final st = widget.official
+          .map((p) => standingFor(p, widget.matches, ovr))
+          .toList()
+        ..sort((a, b) {
+          final c = b.total.compareTo(a.total);
+          return c != 0 ? c : a.p.name.compareTo(b.p.name);
+        });
+      _offRank = {for (var i = 0; i < st.length; i++) st[i].p.name: i + 1};
+    }
     final all = [...widget.matches]
       ..sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
 
@@ -2495,6 +2512,10 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
     final pred = p.forMatch(m.team1, m.team2)!;
     final tip = '${pred[m.team1]}–${pred[m.team2]}';
     final tempPts = liveTempPointsFor(p, m, widget.live[m.num]);
+    // Offisiell plassering (💰): våre korte namn via mapping, elles namnet sjølv.
+    final offName = _internalToOfficial[p.name] ??
+        (_offRank.containsKey(p.name) ? p.name : null);
+    final offRank = offName != null ? _offRank[offName] : null;
 
     Color? bg;
     String? badge;
@@ -2532,7 +2553,32 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
       margin: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Expanded(child: Text(p.name)),
+          Expanded(
+            child: Wrap(
+              spacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(p.name),
+                if (offRank != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('💰 #$offRank',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: scheme.primary)),
+                  ),
+              ],
+            ),
+          ),
+          Text('${_totalScore(p)} p',
+              style: TextStyle(fontSize: 12, color: scheme.outline)),
+          const SizedBox(width: 10),
           Text(tip, style: const TextStyle(fontWeight: FontWeight.w600)),
           if (badge != null) ...[
             const SizedBox(width: 8),
