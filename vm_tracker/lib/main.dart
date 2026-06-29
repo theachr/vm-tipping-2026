@@ -1250,6 +1250,26 @@ Map<String, double> simulateWinChances(
   return wins.map((k, v) => MapEntry(k, v * 100 / sims));
 }
 
+/// Engelsk runde-namn -> norsk (Round of 32 = 16-delsfinale osv.).
+String _roundLabelNo(String r) {
+  switch (r) {
+    case 'Round of 32':
+      return '16-delsfinale';
+    case 'Round of 16':
+      return '8-delsfinale';
+    case 'Quarter-final':
+      return 'Kvartfinale';
+    case 'Semi-final':
+      return 'Semifinale';
+    case 'Match for third place':
+      return 'Bronsefinale';
+    case 'Final':
+      return 'Finale';
+    default:
+      return r;
+  }
+}
+
 /// Pen prosent: «24%», «<1%», «0%».
 String _fmtPct(double v) {
   if (v <= 0) return '0%';
@@ -2296,7 +2316,9 @@ class _UpcomingMatchesViewState extends State<UpcomingMatchesView> {
   Widget _matchTile(MatchInfo m) {
     final scheme = Theme.of(context).colorScheme;
     final act = actualResult(m, widget.overrides);
-    final label = m.isGroup ? m.group.replaceFirst('Group', 'Gruppe') : m.round;
+    final label = m.isGroup
+        ? m.group.replaceFirst('Group', 'Gruppe')
+        : _roundLabelNo(m.round);
 
     // Hvem har tippet på denne kampen? Sortert på høgast totalscore.
     int score(Participant p) =>
